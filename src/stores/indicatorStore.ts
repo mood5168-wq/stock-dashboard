@@ -49,6 +49,15 @@ export const useIndicatorStore = create<IndicatorState>()(
     }),
     {
       name: 'indicator-storage',
+      version: 2,
+      merge: (persisted, current) => {
+        const p = persisted as Partial<IndicatorState> | undefined;
+        if (!p?.visible) return current;
+        return {
+          ...current,
+          visible: { ...current.visible, ...p.visible },
+        };
+      },
     }
   )
 );

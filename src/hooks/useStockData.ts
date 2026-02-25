@@ -2,10 +2,13 @@ import useSWR from 'swr';
 import { StockCandle, Timeframe } from '@/lib/types';
 import { resampleCandles } from '@/lib/indicators';
 
-const fetcher = (url: string) => fetch(url).then(r => {
+const fetcher = async (url: string) => {
+  const r = await fetch(url);
   if (!r.ok) throw new Error('Failed to fetch');
-  return r.json();
-});
+  const json = await r.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+};
 
 export function useStockData(symbol: string, timeframe: Timeframe) {
   // Daily: 1 year + extra for MA60 warmup
@@ -17,7 +20,7 @@ export function useStockData(symbol: string, timeframe: Timeframe) {
   const { data, error, isLoading } = useSWR<StockCandle[]>(
     symbol ? `/api/stock?id=${symbol}&days=${fetchDays}` : null,
     fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 300000 }
+    { revalidateOnFocus: false, dedupingInterval: 300000, errorRetryCount: 3 }
   );
 
   let candles = data || [];
