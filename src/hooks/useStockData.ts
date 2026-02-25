@@ -1,0 +1,30 @@
+import useSWR from 'swr';
+import { StockCandle, Timeframe } from '@/lib/types';
+import { resampleCandles } from '@/lib/indicators';
+
+const fetcher = (url: string) => fetch(url).then(r => {
+  if (!r.ok) throw new Error('Failed to fetch');
+  return r.json();
+});
+
+export function useStockData(symbol: string, timeframe: Timeframe) {
+  // Daily: 1 year + extra for MA60 warmup
+  // Weekly/monthly: fetch more raw daily data for resampling
+  const fetchDays = timeframe === 'weekly' ? 365 * 2
+    : timeframe === 'monthly' ? 365 * 3
+    : 365 + 60;
+
+  const { data, error, isLoading } = useSWR<StockCandle[]>(
+    symbol ? `/api/stock?id=${symbol}&days=${fetchDays}` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 300000 }
+  );
+
+  let candles = data || [];
+
+  if (candles.length && timeframe !== 'daily') {
+    candles = resampleCandles(candles, timeframe);
+  }
+
+  return { candles, error, isLoading };
+}

@@ -375,7 +375,7 @@ def create_chart(df, chip_summary, stock_name, timeframe_mode="日線", show_ma=
         ), row=current_row, col=1)
         current_row += 1
     
-    # 籌碼 (改用區域圖 Area Chart，解決每週數據的間隙感)
+    # 籌碼 (改回線圖 Line Chart，並移除填充，讓 Y 軸自動縮放以顯示細微變化)
     if show_chip and chip_summary is not None:
         merged = pd.merge(df[['date']], chip_summary, on='date', how='left').ffill()
         fig.add_trace(go.Scatter(
@@ -383,9 +383,8 @@ def create_chart(df, chip_summary, stock_name, timeframe_mode="日線", show_ma=
             y=merged['large_pct'],
             name='大戶持股%',
             mode='lines',
-            fill='tozeroy', # 填滿至 0 (底部)
-            line=dict(width=0.5, color='rgba(59, 130, 246, 0.5)'), # 淡藍色線
-            fillcolor='rgba(59, 130, 246, 0.2)', # 非常淡的藍色背景
+            # 移除 fill='tozeroy' 以避免 Y 軸被強制鎖定在 0
+            line=dict(width=2, color='#2563EB'), # 加粗線條，使用鮮明藍色
         ), row=current_row, col=1)
         current_row += 1
     
