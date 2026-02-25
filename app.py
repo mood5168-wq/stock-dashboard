@@ -288,9 +288,13 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     
     current_row = 1
     
+    # 強制將日期轉為純字串列表，並使用 range(len(df)) 作為 X 軸索引，徹底避免 Plotly 自動補日期的問題
+    date_strings = df['date'].dt.strftime('%m-%d').tolist()
+    x_indices = list(range(len(date_strings)))
+    
     # K線
     fig.add_trace(go.Candlestick(
-        x=df['date'].dt.strftime('%Y-%m-%d'), # 使用字串格式來避開日期空檔
+        x=x_indices, # 使用索引
         open=df['open'],
         high=df['max'],
         low=df['min'],
@@ -306,7 +310,7 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
         for ma, color in colors.items():
             if ma in df.columns:
                 fig.add_trace(go.Scatter(
-                    x=df['date'].dt.strftime('%Y-%m-%d'), 
+                    x=x_indices, 
                     y=df[ma],
                     mode='lines', name=ma,
                     line=dict(color=color, width=1.5)
@@ -319,7 +323,7 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
         colors = ['#EF4444' if df.iloc[i]['close'] >= df.iloc[i]['open'] else '#10B981' 
                   for i in range(len(df))]
         fig.add_trace(go.Bar(
-            x=df['date'].dt.strftime('%Y-%m-%d'),
+            x=x_indices,
             y=df['Trading_Volume'] / 1e6,
             name='成交量(M)',
             marker_color=colors,
@@ -330,9 +334,8 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     # 籌碼 (改用區域圖 Area Chart，解決每週數據的間隙感)
     if show_chip and chip_summary is not None:
         merged = pd.merge(df[['date']], chip_summary, on='date', how='left').ffill()
-        # 建立一個輔助欄位，讓圖形畫滿底部
         fig.add_trace(go.Scatter(
-            x=merged['date'].dt.strftime('%Y-%m-%d'),
+            x=x_indices,
             y=merged['large_pct'],
             name='大戶持股%',
             mode='lines',
@@ -345,17 +348,17 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     # RSI
     if show_rsi:
         fig.add_trace(go.Scatter(
-            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['RSI'],
+            x=x_indices, y=df['RSI'],
             mode='lines', name='RSI(14)',
             line=dict(color='#E74C3C', width=1.5)
         ), row=current_row, col=1)
         fig.add_trace(go.Scatter(
-            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['K'],
+            x=x_indices, y=df['K'],
             mode='lines', name='K(9)',
             line=dict(color='#3498DB', width=1)
         ), row=current_row, col=1)
         fig.add_trace(go.Scatter(
-            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['D'],
+            x=x_indices, y=df['D'],
             mode='lines', name='D(9)',
             line=dict(color='#F39C12', width=1)
         ), row=current_row, col=1)
@@ -366,18 +369,18 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     # MACD
     if show_macd:
         fig.add_trace(go.Scatter(
-            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['DIF'],
+            x=x_indices, y=df['DIF'],
             mode='lines', name='DIF',
             line=dict(color='#3498DB', width=1.5)
         ), row=current_row, col=1)
         fig.add_trace(go.Scatter(
-            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['DEM'],
+            x=x_indices, y=df['DEM'],
             mode='lines', name='DEM',
             line=dict(color='#E74C3C', width=1.5)
         ), row=current_row, col=1)
         colors_macd = ['#10B981' if v >= 0 else '#EF4444' for v in df['OSC']]
         fig.add_trace(go.Bar(
-            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['OSC'],
+            x=x_indices, y=df['OSC'],
             name='MACD柱',
             marker_color=colors_macd,
             opacity=0.6
@@ -392,8 +395,13 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         xaxis_rangeslider_visible=False,
         hovermode='x unified',
-        # 移除假日空檔：設定 x 軸為 category 類型
-        xaxis=dict(type='category', showgrid=False, tickmode='auto', nticks=6, tickformat='%m-%d') # 簡化日期，減少標籤數量
+        # 設定 X 軸刻度顯示為日期字串
+        xaxis=dict(
+            tickmode='array',
+            tickvals=x_indices[::max(1, len(x_indices)//8)], # 每隔一段顯示一個標籤，避免擁擠
+            ticktext=date_strings[::max(1, len(date_strings)//8)],
+            showgrid=False
+        )
     )
     
     # 全域設定：移除網格
