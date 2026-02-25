@@ -68,6 +68,45 @@ THOUSAND_CLUB = {
 }
 
 
+def resample_data(df, timeframe):
+    """
+    將日線數據轉換為週線或月線
+    timeframe: "週線" or "月線"
+    """
+    if df is None or df.empty:
+        return df
+        
+    df = df.copy()
+    df.set_index('date', inplace=True)
+    
+    # 對應 pandas resample 規則
+    # W-FRI: 每週五結束 (台股週線慣例)
+    # M: 月底結束
+    rule = 'W-FRI' if timeframe == "週線" else 'M'
+    
+    # 定義轉換邏輯
+    ohlc_dict = {
+        'open': 'first',
+        'max': 'max',
+        'min': 'min',
+        'close': 'last',
+        'Trading_Volume': 'sum', # 成交量加總
+        'Trading_money': 'sum',
+        'Trading_turnover': 'sum',
+        'spread': 'sum', # 漲跌加總
+    }
+    
+    # 進行轉換
+    resampled = df.resample(rule).agg(ohlc_dict)
+    
+    # 移除沒有數據的期間 (例如假日造成的空列)
+    resampled = resampled.dropna(subset=['open'])
+    
+    # 重置 index 變回 date 欄位
+    resampled.reset_index(inplace=True)
+    
+    return resampled
+
 # ===== 數據函數 =====
 @st.cache_data(ttl=300)  # 快取 5 分鐘
 def get_stock_data(stock_id, days=120):
@@ -262,7 +301,7 @@ def get_signal(df, chip_summary=None):
 
 
 # ===== 圖表 =====
-def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True, 
+def create_chart(df, chip_summary, stock_name, timeframe_mode="日線", show_ma=True, show_volume=True, 
                  show_chip=True, show_rsi=True, show_macd=True):
     """建立互動式圖表"""
     
@@ -306,13 +345,18 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     
     # 均線
     if show_ma:
+        # 動態顯示 MA 名稱 (e.g. MA5 -> 5日均線/5週均線)
+        ma_label = "日"
+        if timeframe_mode == "週線": ma_label = "週"
+        elif timeframe_mode == "月線": ma_label = "月"
+        
         colors = {'MA5': '#FF6B6B', 'MA10': '#FFA500', 'MA20': '#4ECDC4', 'MA60': '#9B59B6'}
         for ma, color in colors.items():
             if ma in df.columns:
                 fig.add_trace(go.Scatter(
                     x=x_indices, 
                     y=df[ma],
-                    mode='lines', name=ma,
+                    mode='lines', name=f"{ma.replace('MA', str())}{ma_label}均線 ({ma})", # e.g. 5日均線 (MA5)
                     line=dict(color=color, width=1.5)
                 ), row=current_row, col=1)
     
@@ -455,8 +499,18 @@ def main():
     
     # 載入數據
     with st.spinner("載入數據中..."):
-        df = get_stock_data(stock_id, days + 60)
-        chip_df = get_chip_data(stock_id, days + 60)
+        # 根據週期調整抓取天數，確保有足夠資料計算均線
+        fetch_days = days + 60
+        if timeframe == "週線": fetch_days = days * 7 + 200
+        if timeframe == "月線": fetch_days = days * 30 + 500
+        
+        df = get_stock_data(stock_id, fetch_days)
+        chip_df = get_chip_data(stock_id, fetch_days)
+        
+        # 轉換週期 (Resample)
+        if timeframe in ["週線", "月線"] and df is not None:
+            df = resample_data(df, timeframe)
+            
         chip_summary = calc_chip_summary(chip_df)
     
     if df is None or df.empty:
@@ -507,7 +561,7 @@ def main():
     
     # 圖表
     st.markdown("---")
-    fig = create_chart(df, chip_summary, stock_name, show_ma, show_volume, 
+    fig = create_chart(df, chip_summary, stock_name, timeframe, show_ma, show_volume, 
                        show_chip, show_rsi, show_macd)
     st.plotly_chart(fig, use_container_width=True)
     
