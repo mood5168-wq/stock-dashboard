@@ -327,15 +327,18 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
         ), row=current_row, col=1)
         current_row += 1
     
-    # 籌碼
+    # 籌碼 (改用區域圖 Area Chart，解決每週數據的間隙感)
     if show_chip and chip_summary is not None:
         merged = pd.merge(df[['date']], chip_summary, on='date', how='left').ffill()
-        fig.add_trace(go.Bar(
+        # 建立一個輔助欄位，讓圖形畫滿底部
+        fig.add_trace(go.Scatter(
             x=merged['date'].dt.strftime('%Y-%m-%d'),
             y=merged['large_pct'],
             name='大戶持股%',
-            marker_color='#3B82F6',
-            opacity=0.6
+            mode='lines',
+            fill='tozeroy', # 填滿至 0 (底部)
+            line=dict(width=0.5, color='rgba(59, 130, 246, 0.5)'), # 淡藍色線
+            fillcolor='rgba(59, 130, 246, 0.2)', # 非常淡的藍色背景
         ), row=current_row, col=1)
         current_row += 1
     
@@ -390,7 +393,7 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
         xaxis_rangeslider_visible=False,
         hovermode='x unified',
         # 移除假日空檔：設定 x 軸為 category 類型
-        xaxis=dict(type='category', showgrid=False, tickmode='auto', nticks=10)
+        xaxis=dict(type='category', showgrid=False, tickmode='auto', nticks=6, tickformat='%m-%d') # 簡化日期，減少標籤數量
     )
     
     # 全域設定：移除網格
