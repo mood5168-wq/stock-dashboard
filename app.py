@@ -290,7 +290,7 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     
     # K線
     fig.add_trace(go.Candlestick(
-        x=df['date'],
+        x=df['date'].dt.strftime('%Y-%m-%d'), # 使用字串格式來避開日期空檔
         open=df['open'],
         high=df['max'],
         low=df['min'],
@@ -306,7 +306,8 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
         for ma, color in colors.items():
             if ma in df.columns:
                 fig.add_trace(go.Scatter(
-                    x=df['date'], y=df[ma],
+                    x=df['date'].dt.strftime('%Y-%m-%d'), 
+                    y=df[ma],
                     mode='lines', name=ma,
                     line=dict(color=color, width=1.5)
                 ), row=current_row, col=1)
@@ -318,7 +319,7 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
         colors = ['#EF4444' if df.iloc[i]['close'] >= df.iloc[i]['open'] else '#10B981' 
                   for i in range(len(df))]
         fig.add_trace(go.Bar(
-            x=df['date'],
+            x=df['date'].dt.strftime('%Y-%m-%d'),
             y=df['Trading_Volume'] / 1e6,
             name='成交量(M)',
             marker_color=colors,
@@ -330,7 +331,7 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     if show_chip and chip_summary is not None:
         merged = pd.merge(df[['date']], chip_summary, on='date', how='left').ffill()
         fig.add_trace(go.Bar(
-            x=merged['date'],
+            x=merged['date'].dt.strftime('%Y-%m-%d'),
             y=merged['large_pct'],
             name='大戶持股%',
             marker_color='#3B82F6',
@@ -341,17 +342,17 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     # RSI
     if show_rsi:
         fig.add_trace(go.Scatter(
-            x=df['date'], y=df['RSI'],
+            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['RSI'],
             mode='lines', name='RSI(14)',
             line=dict(color='#E74C3C', width=1.5)
         ), row=current_row, col=1)
         fig.add_trace(go.Scatter(
-            x=df['date'], y=df['K'],
+            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['K'],
             mode='lines', name='K(9)',
             line=dict(color='#3498DB', width=1)
         ), row=current_row, col=1)
         fig.add_trace(go.Scatter(
-            x=df['date'], y=df['D'],
+            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['D'],
             mode='lines', name='D(9)',
             line=dict(color='#F39C12', width=1)
         ), row=current_row, col=1)
@@ -362,18 +363,18 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
     # MACD
     if show_macd:
         fig.add_trace(go.Scatter(
-            x=df['date'], y=df['DIF'],
+            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['DIF'],
             mode='lines', name='DIF',
             line=dict(color='#3498DB', width=1.5)
         ), row=current_row, col=1)
         fig.add_trace(go.Scatter(
-            x=df['date'], y=df['DEM'],
+            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['DEM'],
             mode='lines', name='DEM',
             line=dict(color='#E74C3C', width=1.5)
         ), row=current_row, col=1)
         colors_macd = ['#10B981' if v >= 0 else '#EF4444' for v in df['OSC']]
         fig.add_trace(go.Bar(
-            x=df['date'], y=df['OSC'],
+            x=df['date'].dt.strftime('%Y-%m-%d'), y=df['OSC'],
             name='MACD柱',
             marker_color=colors_macd,
             opacity=0.6
@@ -387,11 +388,15 @@ def create_chart(df, chip_summary, stock_name, show_ma=True, show_volume=True,
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         xaxis_rangeslider_visible=False,
-        hovermode='x unified'
+        hovermode='x unified',
+        # 移除假日空檔：設定 x 軸為 category 類型
+        xaxis=dict(type='category', showgrid=False, tickmode='auto', nticks=10)
     )
     
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB')
+    # 全域設定：移除網格
+    fig.update_xaxes(showgrid=False, zeroline=False)
+    fig.update_yaxes(showgrid=False, zeroline=False, gridcolor='#333333') # 保留極淡的深色水平線作為參考，或者完全移除
+
     
     return fig
 
