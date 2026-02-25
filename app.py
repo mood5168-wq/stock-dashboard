@@ -43,7 +43,13 @@ st.markdown("""
     .signal-buy { color: #10B981; font-weight: bold; }
     .signal-sell { color: #EF4444; font-weight: bold; }
     .signal-hold { color: #F59E0B; font-weight: bold; }
-    .stMetric > div { background-color: #F8FAFC; border-radius: 8px; padding: 10px; }
+    /* 移除強制白色背景，改用半透明深色背景適應 Dark Mode */
+    .stMetric > div { 
+        background-color: rgba(255, 255, 255, 0.05); 
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px; 
+        padding: 10px; 
+    }
 </style>
 """, unsafe_allow_html=True)
 
