@@ -7,7 +7,8 @@ export type ScanStrategy =
   | 'golden_cross'     // 黃金交叉: MA5 上穿 MA20 (近3日)
   | 'death_cross'      // 死亡交叉: MA5 下穿 MA20 (近3日)
   | 'ma_converge'      // 均線糾結: 四條 MA 價差 < 2%
-  | 'above_all_ma';    // 站上所有均線: close > MA5/10/20/60
+  | 'above_all_ma'     // 站上所有均線: close > MA5/10/20/60
+  | 'above_3ma';       // 站上三線: close > MA10/20/60 但 < MA5
 
 export interface ScanStrategyInfo {
   key: ScanStrategy;
@@ -23,6 +24,7 @@ export const STRATEGIES: ScanStrategyInfo[] = [
   { key: 'death_cross', label: '死亡交叉', description: 'MA5 近3日下穿 MA20', color: '#8B5CF6' },
   { key: 'ma_converge', label: '均線糾結', description: '四條MA價差<2%', color: '#3B82F6' },
   { key: 'above_all_ma', label: '站上所有均線', description: '收盤價 > 所有MA', color: '#EC4899' },
+  { key: 'above_3ma', label: '剛站上三線', description: '站上10/20/60MA 未過5MA', color: '#14B8A6' },
 ];
 
 export type ScanScope = 'thousand' | 'twse' | 'tpex' | 'all';
@@ -91,6 +93,10 @@ export function runScan(candles: StockCandle[], strategy: ScanStrategy): boolean
 
     case 'above_all_ma':
       return close > ma5 && close > ma10 && close > ma20 && close > ma60;
+
+    case 'above_3ma':
+      // 股價站上 MA10/20/60 但尚未站上 MA5（剛突破中長期均線，短均還沒跟上）
+      return close > ma10 && close > ma20 && close > ma60 && close <= ma5;
 
     default:
       return false;
