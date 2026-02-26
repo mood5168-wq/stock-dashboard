@@ -22,8 +22,12 @@ export async function fetchStockData(
   const res = await fetch(`${FINMIND_BASE}?${params}`, { next: { revalidate: 300 } });
   const json = await res.json();
 
-  if (json.status !== 200 || !json.data?.length) {
-    throw new Error(json.msg || 'No data');
+  if (json.status !== 200) {
+    throw new Error(json.msg || 'API error');
+  }
+
+  if (!json.data?.length) {
+    return []; // No data available (newly listed, suspended, etc.)
   }
 
   return json.data

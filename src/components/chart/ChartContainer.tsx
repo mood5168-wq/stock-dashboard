@@ -137,6 +137,17 @@ export default function ChartContainer() {
     );
   }
 
+  if (!isLoading && candles.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-[#787B86]">
+        <div className="text-center">
+          <div className="text-lg mb-2">暫無交易資料</div>
+          <div className="text-sm">{symbol} — 該股票可能為新上市、暫停交易或無交易紀錄</div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex flex-col h-full gap-px p-2">

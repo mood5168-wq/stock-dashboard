@@ -152,7 +152,7 @@ export default function ScannerPanel({ open, onClose }: Props) {
               符合條件 ({matchedResults.length})
             </div>
             {matchedResults.map((r) => (
-              <StockRow key={r.code} result={r} active={r.code === symbol} color={currentStrategy.color} onClick={() => setSymbol(r.code, r.name)} />
+              <StockRow key={r.code} result={r} active={r.code === symbol} color={currentStrategy.color} onClick={() => { stop(); setSymbol(r.code, r.name); }} />
             ))}
           </>
         )}
@@ -164,7 +164,7 @@ export default function ScannerPanel({ open, onClose }: Props) {
               不符合 ({unmatchedResults.length})
             </div>
             {unmatchedResults.map((r) => (
-              <StockRow key={r.code} result={r} active={r.code === symbol} dimmed onClick={() => setSymbol(r.code, r.name)} />
+              <StockRow key={r.code} result={r} active={r.code === symbol} dimmed onClick={() => { stop(); setSymbol(r.code, r.name); }} />
             ))}
           </>
         )}
