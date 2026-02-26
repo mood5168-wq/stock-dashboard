@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useChartStore } from '@/stores/chartStore';
 import { useScannerData } from '@/hooks/useScannerData';
-import { STRATEGIES, ScanStrategy } from '@/lib/scanner';
+import { STRATEGIES, SCAN_SCOPES, ScanStrategy, ScanScope } from '@/lib/scanner';
 
 interface Props {
   open: boolean;
@@ -12,12 +12,15 @@ interface Props {
 
 export default function ScannerPanel({ open, onClose }: Props) {
   const [strategy, setStrategy] = useState<ScanStrategy>('bullish_align');
+  const [scope, setScope] = useState<ScanScope>('thousand');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { setSymbol } = useChartStore();
-  const { results, scanning, progress, rescan } = useScannerData(strategy, open);
+  const { symbol, setSymbol } = useChartStore();
+  const { results, scanning, progress, total, scanned, rescan, stop } = useScannerData(strategy, scope, open);
 
   const currentStrategy = STRATEGIES.find((s) => s.key === strategy)!;
   const matchedCount = results.filter((r) => r.matched).length;
+  const matchedResults = results.filter((r) => r.matched);
+  const unmatchedResults = results.filter((r) => !r.matched);
 
   if (!open) return null;
 
@@ -38,8 +41,31 @@ export default function ScannerPanel({ open, onClose }: Props) {
         </button>
       </div>
 
+      {/* Scope selector */}
+      <div className="px-3 py-2 border-b border-[#363A45]">
+        <div className="text-[10px] text-[#787B86] mb-1.5">掃描範圍</div>
+        <div className="flex gap-1">
+          {SCAN_SCOPES.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setScope(s.key)}
+              disabled={scanning}
+              className={`flex-1 px-1 py-1.5 rounded text-[10px] font-medium transition-colors ${
+                scope === s.key
+                  ? 'bg-[#2962FF] text-white'
+                  : 'bg-[#131722] text-[#787B86] hover:text-[#D1D4DC] disabled:opacity-50'
+              }`}
+              title={s.description}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Strategy selector */}
       <div className="px-3 py-2 border-b border-[#363A45]">
+        <div className="text-[10px] text-[#787B86] mb-1.5">掃描策略</div>
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -78,18 +104,28 @@ export default function ScannerPanel({ open, onClose }: Props) {
           )}
         </div>
 
-        {/* Progress bar & stats */}
+        {/* Progress & stats */}
         <div className="mt-2 flex items-center justify-between">
           <span className="text-[10px] text-[#787B86]">
-            {scanning ? `掃描中 ${progress}%` : `符合: ${matchedCount}/${results.length}`}
+            {scanning
+              ? `掃描中 ${scanned}/${total} (${progress}%)`
+              : `符合: ${matchedCount}/${results.length}`}
           </span>
-          <button
-            onClick={rescan}
-            disabled={scanning}
-            className="text-[10px] text-[#2962FF] hover:text-[#5B8DEF] disabled:text-[#363A45] transition-colors"
-          >
-            重新掃描
-          </button>
+          {scanning ? (
+            <button
+              onClick={stop}
+              className="text-[10px] text-[#EF4444] hover:text-[#F87171] transition-colors"
+            >
+              停止
+            </button>
+          ) : (
+            <button
+              onClick={rescan}
+              className="text-[10px] text-[#2962FF] hover:text-[#5B8DEF] transition-colors"
+            >
+              重新掃描
+            </button>
+          )}
         </div>
         {scanning && (
           <div className="mt-1 h-1 bg-[#131722] rounded-full overflow-hidden">
@@ -108,36 +144,74 @@ export default function ScannerPanel({ open, onClose }: Props) {
             尚無結果
           </div>
         )}
-        {results.map((r) => (
-          <button
-            key={r.code}
-            onClick={() => setSymbol(r.code, r.name)}
-            className={`w-full text-left px-3 py-2 border-b border-[#1a1e2b] hover:bg-[#2A2E39] transition-colors ${
-              r.matched ? '' : 'opacity-40'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {r.matched && (
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentStrategy.color }} />
-                )}
-                <span className={`text-sm font-medium ${r.matched ? 'text-[#D1D4DC]' : 'text-[#787B86]'}`}>
-                  {r.code}
-                </span>
-                <span className="text-[11px] text-[#787B86]">{r.name}</span>
-              </div>
+
+        {/* Matched stocks */}
+        {matchedResults.length > 0 && (
+          <>
+            <div className="px-3 py-1.5 text-[10px] text-[#787B86] uppercase tracking-wider bg-[#131722] sticky top-0 z-10">
+              符合條件 ({matchedResults.length})
             </div>
-            <div className="flex items-center justify-between mt-0.5">
-              <span className="text-xs text-[#D1D4DC]">{r.close.toLocaleString()}</span>
-              <span className={`text-xs font-medium ${
-                r.changePct > 0 ? 'text-[#EF4444]' : r.changePct < 0 ? 'text-[#10B981]' : 'text-[#787B86]'
-              }`}>
-                {r.changePct > 0 ? '+' : ''}{r.changePct.toFixed(2)}%
-              </span>
+            {matchedResults.map((r) => (
+              <StockRow key={r.code} result={r} active={r.code === symbol} color={currentStrategy.color} onClick={() => setSymbol(r.code, r.name)} />
+            ))}
+          </>
+        )}
+
+        {/* Unmatched stocks (collapsed by default for large lists) */}
+        {unmatchedResults.length > 0 && !scanning && scope === 'thousand' && (
+          <>
+            <div className="px-3 py-1.5 text-[10px] text-[#787B86] uppercase tracking-wider bg-[#131722] sticky top-0 z-10">
+              不符合 ({unmatchedResults.length})
             </div>
-          </button>
-        ))}
+            {unmatchedResults.map((r) => (
+              <StockRow key={r.code} result={r} active={r.code === symbol} dimmed onClick={() => setSymbol(r.code, r.name)} />
+            ))}
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+function StockRow({
+  result: r,
+  active,
+  color,
+  dimmed,
+  onClick,
+}: {
+  result: { code: string; name: string; close: number; changePct: number; matched: boolean };
+  active: boolean;
+  color?: string;
+  dimmed?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full text-left px-3 py-2 border-b border-[#1a1e2b] hover:bg-[#2A2E39] transition-colors ${
+        active ? 'bg-[#2A2E39]' : ''
+      } ${dimmed ? 'opacity-40' : ''}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {r.matched && color && (
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+          )}
+          <span className={`text-sm font-medium ${active ? 'text-[#2962FF]' : 'text-[#D1D4DC]'}`}>
+            {r.code}
+          </span>
+          <span className="text-[11px] text-[#787B86]">{r.name}</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mt-0.5">
+        <span className="text-xs text-[#D1D4DC]">{r.close.toLocaleString()}</span>
+        <span className={`text-xs font-medium ${
+          r.changePct > 0 ? 'text-[#EF4444]' : r.changePct < 0 ? 'text-[#10B981]' : 'text-[#787B86]'
+        }`}>
+          {r.changePct > 0 ? '+' : ''}{r.changePct.toFixed(2)}%
+        </span>
+      </div>
+    </button>
   );
 }

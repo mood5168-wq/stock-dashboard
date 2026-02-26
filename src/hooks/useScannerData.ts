@@ -1,50 +1,96 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import useSWR from 'swr';
 import { StockCandle } from '@/lib/types';
 import { THOUSAND_CLUB, MARKET_INDEX } from '@/lib/constants';
-import { ScanStrategy, ScanResult, runScan } from '@/lib/scanner';
+import { ScanStrategy, ScanScope, ScanResult, runScan } from '@/lib/scanner';
 
-// Only scan actual stocks, not ETFs
-const SCAN_STOCKS = Object.entries(THOUSAND_CLUB).filter(
-  ([code]) => !(code in MARKET_INDEX)
-);
+interface StockInfo {
+  stock_id: string;
+  stock_name: string;
+  type: string;
+}
+
+const fetcher = async (url: string) => {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Failed to fetch');
+  const json = await r.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+};
+
+// Thousand club stocks (exclude ETFs)
+const THOUSAND_ENTRIES = Object.entries(THOUSAND_CLUB)
+  .filter(([code]) => !(code in MARKET_INDEX))
+  .map(([code, name]) => ({ stock_id: code, stock_name: name, type: 'twse' }));
 
 interface ScannerState {
   results: ScanResult[];
   scanning: boolean;
-  progress: number; // 0-100
-  error: string | null;
+  progress: number;
+  total: number;
+  scanned: number;
 }
 
-export function useScannerData(strategy: ScanStrategy, active: boolean) {
+export function useScannerData(strategy: ScanStrategy, scope: ScanScope, active: boolean) {
   const [state, setState] = useState<ScannerState>({
     results: [],
     scanning: false,
     progress: 0,
-    error: null,
+    total: 0,
+    scanned: 0,
   });
   const abortRef = useRef(false);
   const cacheRef = useRef<Map<string, StockCandle[]>>(new Map());
 
+  // Fetch full stock list (only when needed for non-thousand scopes)
+  const needFullList = scope !== 'thousand';
+  const { data: fullList } = useSWR<StockInfo[]>(
+    needFullList && active ? '/api/stocklist' : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 86400000 }
+  );
+
+  // Build stock list based on scope
+  const getStockList = useCallback((): { code: string; name: string }[] => {
+    if (scope === 'thousand') {
+      return THOUSAND_ENTRIES.map((s) => ({ code: s.stock_id, name: s.stock_name }));
+    }
+
+    if (!fullList) return [];
+
+    let filtered = fullList;
+    if (scope === 'twse') {
+      filtered = fullList.filter((s) => s.type === 'twse');
+    } else if (scope === 'tpex') {
+      filtered = fullList.filter((s) => s.type === 'tpex');
+    }
+
+    return filtered.map((s) => ({ code: s.stock_id, name: s.stock_name }));
+  }, [scope, fullList]);
+
   const scan = useCallback(async () => {
+    const stocks = getStockList();
+    if (!stocks.length) return;
+
     abortRef.current = false;
-    setState({ results: [], scanning: true, progress: 0, error: null });
+    setState({ results: [], scanning: true, progress: 0, total: stocks.length, scanned: 0 });
 
     const results: ScanResult[] = [];
-    const total = SCAN_STOCKS.length;
-    const batchSize = 5; // Fetch 5 stocks at a time to avoid overwhelming the API
+    const total = stocks.length;
+    const batchSize = scope === 'thousand' ? 5 : 10;
 
     for (let i = 0; i < total; i += batchSize) {
       if (abortRef.current) break;
 
-      const batch = SCAN_STOCKS.slice(i, i + batchSize);
-      const promises = batch.map(async ([code, name]) => {
+      const batch = stocks.slice(i, i + batchSize);
+      const promises = batch.map(async ({ code, name }) => {
         try {
           let candles = cacheRef.current.get(code);
           if (!candles) {
             const res = await fetch(`/api/stock?id=${code}&days=120`);
-            if (!res.ok) throw new Error('fetch failed');
+            if (!res.ok) return null;
             const json = await res.json();
-            if (json.error) throw new Error(json.error);
+            if (json.error) return null;
             candles = json as StockCandle[];
             cacheRef.current.set(code, candles);
           }
@@ -64,7 +110,7 @@ export function useScannerData(strategy: ScanStrategy, active: boolean) {
             matched: runScan(candles, strategy),
           } as ScanResult;
         } catch {
-          return { code, name, close: 0, change: 0, changePct: 0, matched: false } as ScanResult;
+          return null;
         }
       });
 
@@ -73,31 +119,40 @@ export function useScannerData(strategy: ScanStrategy, active: boolean) {
         if (r) results.push(r);
       }
 
-      setState((prev) => ({
-        ...prev,
-        progress: Math.round(((i + batch.length) / total) * 100),
-        results: [...results],
-      }));
+      const scanned = Math.min(i + batch.length, total);
+      setState({
+        results: [...results].sort((a, b) => {
+          if (a.matched !== b.matched) return a.matched ? -1 : 1;
+          return b.changePct - a.changePct;
+        }),
+        scanning: true,
+        progress: Math.round((scanned / total) * 100),
+        total,
+        scanned,
+      });
     }
 
-    // Sort: matched first, then by changePct descending
     results.sort((a, b) => {
       if (a.matched !== b.matched) return a.matched ? -1 : 1;
       return b.changePct - a.changePct;
     });
 
-    setState({ results, scanning: false, progress: 100, error: null });
-  }, [strategy]);
+    setState({ results, scanning: false, progress: 100, total, scanned: total });
+  }, [strategy, scope, getStockList]);
 
-  // Auto-scan when strategy changes and panel is active
+  // Auto-scan when strategy/scope changes and panel is active
   useEffect(() => {
-    if (active) {
+    if (active && (scope === 'thousand' || fullList)) {
       scan();
     }
     return () => {
       abortRef.current = true;
     };
-  }, [strategy, active, scan]);
+  }, [strategy, scope, active, scan, fullList]);
 
-  return { ...state, rescan: scan };
+  const stop = useCallback(() => {
+    abortRef.current = true;
+  }, []);
+
+  return { ...state, rescan: scan, stop };
 }

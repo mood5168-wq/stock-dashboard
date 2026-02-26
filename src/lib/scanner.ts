@@ -25,6 +25,21 @@ export const STRATEGIES: ScanStrategyInfo[] = [
   { key: 'above_all_ma', label: '站上所有均線', description: '收盤價 > 所有MA', color: '#EC4899' },
 ];
 
+export type ScanScope = 'thousand' | 'twse' | 'tpex' | 'all';
+
+export interface ScanScopeInfo {
+  key: ScanScope;
+  label: string;
+  description: string;
+}
+
+export const SCAN_SCOPES: ScanScopeInfo[] = [
+  { key: 'thousand', label: '千元股', description: '36 檔' },
+  { key: 'twse', label: '上市', description: '~1970 檔' },
+  { key: 'tpex', label: '上櫃', description: '~1030 檔' },
+  { key: 'all', label: '全市場', description: '~3000 檔' },
+];
+
 export interface ScanResult {
   code: string;
   name: string;
