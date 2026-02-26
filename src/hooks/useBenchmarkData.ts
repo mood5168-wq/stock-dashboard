@@ -18,7 +18,7 @@ export function useBenchmarkData(timeframe: Timeframe) {
     : 365 + 60;
 
   const { data } = useSWR<StockCandle[]>(
-    `/api/stock?id=${BENCHMARK_ID}&days=${fetchDays}`,
+    `/api/stock?id=${BENCHMARK_ID}&days=${fetchDays}&adj=true`,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 600000 }
   );

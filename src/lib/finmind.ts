@@ -5,13 +5,14 @@ const FINMIND_BASE = 'https://api.finmindtrade.com/api/v4/data';
 export async function fetchStockData(
   stockId: string,
   days: number,
-  token: string
+  token: string,
+  adjusted: boolean = false
 ): Promise<StockCandle[]> {
   const endDate = new Date().toISOString().slice(0, 10);
   const startDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 
   const params = new URLSearchParams({
-    dataset: 'TaiwanStockPrice',
+    dataset: adjusted ? 'TaiwanStockPriceAdj' : 'TaiwanStockPrice',
     data_id: stockId,
     start_date: startDate,
     end_date: endDate,
