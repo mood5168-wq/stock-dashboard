@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useChartStore } from '@/stores/chartStore';
-import { THOUSAND_CLUB } from '@/lib/constants';
+import { THOUSAND_CLUB, MARKET_INDEX } from '@/lib/constants';
 
 export default function SymbolSearch() {
   const { symbol, symbolName, setSymbol } = useChartStore();
@@ -11,13 +11,19 @@ export default function SymbolSearch() {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const entries = Object.entries(THOUSAND_CLUB);
+  const marketEntries = Object.entries(MARKET_INDEX);
+  const stockEntries = Object.entries(THOUSAND_CLUB).filter(([code]) => !(code in MARKET_INDEX));
+  const allEntries = [...marketEntries, ...stockEntries];
+
   const filtered = query
-    ? entries.filter(
+    ? allEntries.filter(
         ([code, name]) =>
           code.includes(query) || name.toLowerCase().includes(query.toLowerCase())
       )
-    : entries;
+    : allEntries;
+
+  const filteredMarket = filtered.filter(([code]) => code in MARKET_INDEX);
+  const filteredStocks = filtered.filter(([code]) => !(code in MARKET_INDEX));
 
   const handleSelect = useCallback((code: string, name: string) => {
     setSymbol(code, name);
@@ -78,18 +84,44 @@ export default function SymbolSearch() {
             />
           </div>
           <div className="max-h-64 overflow-y-auto">
-            {filtered.map(([code, name]) => (
-              <button
-                key={code}
-                onClick={() => handleSelect(code, name)}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-[#2A2E39] flex justify-between items-center ${
-                  code === symbol ? 'bg-[#2A2E39] text-[#2962FF]' : 'text-[#D1D4DC]'
-                }`}
-              >
-                <span className="font-medium">{code}</span>
-                <span className="text-[#787B86] text-xs">{name}</span>
-              </button>
-            ))}
+            {filteredMarket.length > 0 && (
+              <>
+                <div className="px-3 py-1.5 text-[10px] text-[#787B86] uppercase tracking-wider bg-[#131722]">
+                  大盤 / ETF
+                </div>
+                {filteredMarket.map(([code, name]) => (
+                  <button
+                    key={code}
+                    onClick={() => handleSelect(code, name)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-[#2A2E39] flex justify-between items-center ${
+                      code === symbol ? 'bg-[#2A2E39] text-[#2962FF]' : 'text-[#D1D4DC]'
+                    }`}
+                  >
+                    <span className="font-medium">{code}</span>
+                    <span className="text-[#787B86] text-xs">{name}</span>
+                  </button>
+                ))}
+              </>
+            )}
+            {filteredStocks.length > 0 && (
+              <>
+                <div className="px-3 py-1.5 text-[10px] text-[#787B86] uppercase tracking-wider bg-[#131722]">
+                  千元股
+                </div>
+                {filteredStocks.map(([code, name]) => (
+                  <button
+                    key={code}
+                    onClick={() => handleSelect(code, name)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-[#2A2E39] flex justify-between items-center ${
+                      code === symbol ? 'bg-[#2A2E39] text-[#2962FF]' : 'text-[#D1D4DC]'
+                    }`}
+                  >
+                    <span className="font-medium">{code}</span>
+                    <span className="text-[#787B86] text-xs">{name}</span>
+                  </button>
+                ))}
+              </>
+            )}
             {filtered.length === 0 && query && (
               <div className="px-3 py-2 text-xs text-[#787B86]">
                 按 Enter 搜尋 &quot;{query}&quot;

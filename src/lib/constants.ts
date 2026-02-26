@@ -1,4 +1,11 @@
+// 大盤 & 常用 ETF（置頂）
+export const MARKET_INDEX: Record<string, string> = {
+  "0050": "元大台灣50",
+  "006208": "富邦台50",
+};
+
 export const THOUSAND_CLUB: Record<string, string> = {
+  ...MARKET_INDEX,
   "5274": "信驊",
   "6515": "穎崴",
   "7769": "鴻勁",
