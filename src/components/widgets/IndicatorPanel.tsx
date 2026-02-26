@@ -24,6 +24,9 @@ const indicatorList: IndicatorItem[] = [
   { id: 'MACD', label: 'MACD' },
   { id: 'Bollinger', label: '布林通道' },
   { id: 'Chip', label: '大戶籌碼' },
+  { id: 'VWAP', label: 'VWAP' },
+  { id: 'RS', label: '相對強弱 vs 0050' },
+  { id: 'VolumeProfile', label: '成交量堆積' },
 ];
 
 export default function IndicatorPanel() {
@@ -40,7 +43,7 @@ export default function IndicatorPanel() {
   }, []);
 
   // Count top-level active indicators (don't count sub-MAs)
-  const topLevel: IndicatorType[] = ['MA', 'Volume', 'RSI', 'KD', 'MACD', 'Bollinger', 'Chip'];
+  const topLevel: IndicatorType[] = ['MA', 'Volume', 'RSI', 'KD', 'MACD', 'Bollinger', 'Chip', 'VWAP', 'RS', 'VolumeProfile'];
   const activeCount = topLevel.filter((k) => visible[k]).length;
 
   return (

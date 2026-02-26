@@ -23,6 +23,9 @@ export const useIndicatorStore = create<IndicatorState>()(
         MACD: true,
         Bollinger: false,
         Chip: true,
+        VWAP: false,
+        RS: false,
+        VolumeProfile: false,
       },
       toggle: (indicator) =>
         set((state) => {
@@ -49,7 +52,7 @@ export const useIndicatorStore = create<IndicatorState>()(
     }),
     {
       name: 'indicator-storage',
-      version: 2,
+      version: 3,
       merge: (persisted, current) => {
         const p = persisted as Partial<IndicatorState> | undefined;
         if (!p?.visible) return current;

@@ -3,6 +3,7 @@
 import SymbolSearch from '../widgets/SymbolSearch';
 import TimeframeSelector from '../widgets/TimeframeSelector';
 import IndicatorPanel from '../widgets/IndicatorPanel';
+import PriceAlertPanel from '../widgets/PriceAlertPanel';
 import PriceHeader from '../widgets/PriceHeader';
 
 export default function TopToolbar() {
@@ -13,6 +14,8 @@ export default function TopToolbar() {
       <TimeframeSelector />
       <div className="w-px h-6 bg-[#363A45]" />
       <IndicatorPanel />
+      <div className="w-px h-6 bg-[#363A45]" />
+      <PriceAlertPanel />
       <div className="flex-1" />
       <PriceHeader />
     </div>

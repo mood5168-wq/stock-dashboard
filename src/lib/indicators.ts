@@ -266,3 +266,101 @@ export function resampleCandles(
 
   return result.sort((a, b) => a.date.localeCompare(b.date));
 }
+
+/**
+ * VWAP — Volume Weighted Average Price
+ * Typical Price = (H + L + C) / 3
+ * VWAP = cumulative(TP * Volume) / cumulative(Volume)
+ */
+export function calcVWAP(candles: StockCandle[]): (number | null)[] {
+  const result: (number | null)[] = [];
+  let cumTPV = 0;
+  let cumVol = 0;
+
+  for (const c of candles) {
+    const tp = (c.high + c.low + c.close) / 3;
+    cumTPV += tp * c.volume;
+    cumVol += c.volume;
+    result.push(cumVol > 0 ? cumTPV / cumVol : null);
+  }
+  return result;
+}
+
+/**
+ * Relative Strength — stock vs benchmark (normalized to 100 at start)
+ * RS = (stock_close / stock_close[0]) / (bench_close / bench_close[0]) * 100
+ */
+export function calcRelativeStrength(
+  candles: StockCandle[],
+  benchmark: StockCandle[]
+): (number | null)[] {
+  if (!candles.length || !benchmark.length) return [];
+
+  // Build benchmark map by date
+  const benchMap = new Map<string, number>();
+  for (const b of benchmark) {
+    benchMap.set(b.date, b.close);
+  }
+
+  const result: (number | null)[] = [];
+  let stockBase: number | null = null;
+  let benchBase: number | null = null;
+
+  for (const c of candles) {
+    const benchClose = benchMap.get(c.date);
+    if (benchClose === undefined) {
+      result.push(result.length > 0 ? result[result.length - 1] : null);
+      continue;
+    }
+    if (stockBase === null) {
+      stockBase = c.close;
+      benchBase = benchClose;
+    }
+    const stockRel = c.close / stockBase!;
+    const benchRel = benchClose / benchBase!;
+    result.push(benchRel > 0 ? (stockRel / benchRel) * 100 : null);
+  }
+  return result;
+}
+
+/**
+ * Volume Profile — distribute volume into price buckets
+ * Returns array of { price, volume, pct } sorted by price
+ */
+export interface VolumeProfileBucket {
+  price: number;
+  volume: number;
+  pct: number; // percentage of max volume (0-1)
+}
+
+export function calcVolumeProfile(
+  candles: StockCandle[],
+  bucketCount: number = 24
+): VolumeProfileBucket[] {
+  if (!candles.length) return [];
+
+  const minPrice = Math.min(...candles.map(c => c.low));
+  const maxPrice = Math.max(...candles.map(c => c.high));
+  const range = maxPrice - minPrice;
+
+  if (range <= 0) return [];
+
+  const bucketSize = range / bucketCount;
+  const buckets: number[] = new Array(bucketCount).fill(0);
+
+  for (const c of candles) {
+    // Distribute volume across the candle's price range
+    const tp = (c.high + c.low + c.close) / 3;
+    const idx = Math.min(Math.floor((tp - minPrice) / bucketSize), bucketCount - 1);
+    buckets[idx] += c.volume;
+  }
+
+  const maxVol = Math.max(...buckets);
+  if (maxVol <= 0) return [];
+
+  return buckets.map((vol, i) => ({
+    price: minPrice + (i + 0.5) * bucketSize,
+    volume: vol,
+    pct: vol / maxVol,
+  }));
+}

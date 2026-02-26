@@ -10,7 +10,7 @@ import {
   Time,
   CrosshairMode,
 } from 'lightweight-charts';
-import { StockCandle, IndicatorData } from '@/lib/types';
+import { StockCandle, IndicatorData, PriceAlert } from '@/lib/types';
 import { COLORS } from '@/lib/constants';
 import { useIndicatorStore } from '@/stores/indicatorStore';
 import { useChartStore } from '@/stores/chartStore';
@@ -18,6 +18,8 @@ import { useChartStore } from '@/stores/chartStore';
 interface Props {
   candles: StockCandle[];
   indicators: IndicatorData | null;
+  vwapData?: (number | null)[];
+  alertPrices?: PriceAlert[];
   onCrosshairMove?: (index: number | null, time: string | null) => void;
   registerChart: (chart: IChartApi) => void;
   unregisterChart: (chart: IChartApi) => void;
@@ -26,7 +28,7 @@ interface Props {
 
 const VISIBLE_BARS = 120;
 
-export default function CandlestickChart({ candles, indicators, onCrosshairMove, registerChart, unregisterChart, syncVisibleRange }: Props) {
+export default function CandlestickChart({ candles, indicators, vwapData, alertPrices, onCrosshairMove, registerChart, unregisterChart, syncVisibleRange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -237,6 +239,61 @@ export default function CandlestickChart({ candles, indicators, onCrosshairMove,
       }
     }
   }, [indicators, visible.MA5, visible.MA10, visible.MA20, visible.MA60, visible.Bollinger, buildLineData]);
+
+  // VWAP overlay
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const existing = lineSeriesRefs.current.get('VWAP');
+
+    if (visible.VWAP && vwapData?.length) {
+      const data = buildLineData(vwapData);
+      if (existing) {
+        existing.setData(data);
+      } else {
+        const series = chartRef.current.addLineSeries({
+          color: COLORS.vwap,
+          lineWidth: 2,
+          lineStyle: 2,
+          priceLineVisible: false,
+          lastValueVisible: true,
+        });
+        series.setData(data);
+        lineSeriesRefs.current.set('VWAP', series);
+      }
+    } else if (existing) {
+      chartRef.current.removeSeries(existing);
+      lineSeriesRefs.current.delete('VWAP');
+    }
+  }, [vwapData, visible.VWAP, buildLineData]);
+
+  // Alert price lines
+  useEffect(() => {
+    if (!candleSeriesRef.current) return;
+
+    // Remove old alert lines
+    const existingAlertKeys = Array.from(lineSeriesRefs.current.keys()).filter(k => k.startsWith('alert_'));
+    for (const key of existingAlertKeys) {
+      const s = lineSeriesRefs.current.get(key);
+      if (s) {
+        try { chartRef.current?.removeSeries(s); } catch { /* ok */ }
+        lineSeriesRefs.current.delete(key);
+      }
+    }
+
+    // Draw new alert lines as price lines on candle series
+    if (alertPrices?.length) {
+      for (const alert of alertPrices) {
+        candleSeriesRef.current.createPriceLine({
+          price: alert.price,
+          color: COLORS.alertLine,
+          lineWidth: 1,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: alert.direction === 'above' ? '突破' : '跌破',
+        });
+      }
+    }
+  }, [alertPrices]);
 
   return (
     <div className="flex flex-col w-full h-full">

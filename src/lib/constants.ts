@@ -60,6 +60,9 @@ export const COLORS = {
   bbUpper: '#787B86',
   bbLower: '#787B86',
   bbFill: 'rgba(120, 123, 134, 0.1)',
+  vwap: '#2962FF',
+  rs: '#F59E0B',
+  alertLine: '#F59E0B',
 };
 
 export const DEFAULT_STOCK = '2330';

@@ -52,6 +52,15 @@ export interface SignalResult {
 
 export type Timeframe = 'daily' | 'weekly' | 'monthly';
 
-export type IndicatorType = 'MA' | 'MA5' | 'MA10' | 'MA20' | 'MA60' | 'Volume' | 'RSI' | 'KD' | 'MACD' | 'Bollinger' | 'Chip';
+export type IndicatorType = 'MA' | 'MA5' | 'MA10' | 'MA20' | 'MA60' | 'Volume' | 'RSI' | 'KD' | 'MACD' | 'Bollinger' | 'Chip' | 'VWAP' | 'RS' | 'VolumeProfile';
+
+export interface PriceAlert {
+  id: string;
+  symbol: string;
+  price: number;
+  direction: 'above' | 'below';
+  triggered: boolean;
+  createdAt: number;
+}
 
 export type DrawingTool = 'crosshair' | 'trendline' | 'horizontal' | 'fibonacci' | null;

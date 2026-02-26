@@ -6,12 +6,18 @@ import CandlestickChart from './CandlestickChart';
 import VolumePane from './VolumePane';
 import IndicatorPane from './IndicatorPane';
 import ChipPane from './ChipPane';
+import RSPane from './RSPane';
+import VolumeProfileOverlay from './VolumeProfileOverlay';
 import { useChartStore } from '@/stores/chartStore';
 import { useIndicatorStore } from '@/stores/indicatorStore';
+import { useAlertStore } from '@/stores/alertStore';
 import { useStockData } from '@/hooks/useStockData';
 import { useChipData } from '@/hooks/useChipData';
+import { useBenchmarkData } from '@/hooks/useBenchmarkData';
 import { useIndicators } from '@/hooks/useIndicators';
+import { useAlertChecker } from '@/hooks/useAlertChecker';
 import { getSignal } from '@/lib/signals';
+import { calcVWAP } from '@/lib/indicators';
 import { COLORS } from '@/lib/constants';
 import SignalBadge from '../widgets/SignalBadge';
 
@@ -23,7 +29,22 @@ export default function ChartContainer() {
 
   const { candles, isLoading, error } = useStockData(symbol, timeframe);
   const { chipSummary } = useChipData(symbol);
+  const { benchmark } = useBenchmarkData(timeframe);
   const indicators = useIndicators(candles);
+
+  // Alert checker
+  useAlertChecker(symbol, candles);
+  const allAlerts = useAlertStore((s) => s.alerts);
+  const activeAlerts = useMemo(
+    () => allAlerts.filter((a) => a.symbol === symbol && !a.triggered),
+    [allAlerts, symbol]
+  );
+
+  // VWAP
+  const vwapData = useMemo(() => {
+    if (!candles.length) return [];
+    return calcVWAP(candles);
+  }, [candles]);
 
   // Crosshair sync across all sub-charts
   const registerChart = useCallback((chart: IChartApi) => {
@@ -35,7 +56,7 @@ export default function ChartContainer() {
   }, []);
 
   const syncVisibleRange = useCallback((sourceChart: IChartApi) => {
-    if (isSyncingRef.current) return; // prevent recursive sync loop
+    if (isSyncingRef.current) return;
     isSyncingRef.current = true;
     try {
       const timeRange = sourceChart.timeScale().getVisibleRange();
@@ -72,9 +93,7 @@ export default function ChartContainer() {
   const showKD = visible.KD;
   const showMACD = visible.MACD;
   const showChip = visible.Chip && !!chipSummary?.length;
-
-  // subPaneCount available for future layout calculations
-  // const subPaneCount = [showVolume, showRSI, showKD, showMACD, showChip].filter(Boolean).length;
+  const showRS = visible.RS && benchmark.length > 0;
 
   // RSI lines config
   const rsiLines = useMemo(() => {
@@ -128,7 +147,6 @@ export default function ChartContainer() {
     );
   }
 
-  // Use flex grow ratios: main chart = 4, sub panes = 1 each
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Signal badge */}
@@ -139,21 +157,38 @@ export default function ChartContainer() {
       )}
 
       {/* Main candlestick chart — flex-[4] so it always dominates */}
-      <div className="flex-[4] min-h-0 border-b border-[#363A45]">
+      <div className="flex-[4] min-h-0 border-b border-[#363A45] relative">
         <CandlestickChart
           candles={candles}
           indicators={indicators}
+          vwapData={visible.VWAP ? vwapData : undefined}
+          alertPrices={activeAlerts.length > 0 ? activeAlerts : undefined}
           onCrosshairMove={onCrosshairMove}
           registerChart={registerChart}
           unregisterChart={unregisterChart}
           syncVisibleRange={syncVisibleRange}
         />
+        {/* Volume Profile overlay */}
+        {visible.VolumeProfile && <VolumeProfileOverlay candles={candles} />}
       </div>
 
       {/* Volume pane */}
       {showVolume && (
         <div className="flex-1 min-h-0 border-b border-[#363A45]">
           <VolumePane candles={candles} registerChart={registerChart} unregisterChart={unregisterChart} syncVisibleRange={syncVisibleRange} />
+        </div>
+      )}
+
+      {/* RS pane */}
+      {showRS && (
+        <div className="flex-1 min-h-0 border-b border-[#363A45]">
+          <RSPane
+            candles={candles}
+            benchmark={benchmark}
+            registerChart={registerChart}
+            unregisterChart={unregisterChart}
+            syncVisibleRange={syncVisibleRange}
+          />
         </div>
       )}
 
