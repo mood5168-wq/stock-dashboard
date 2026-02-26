@@ -18,7 +18,7 @@ export interface ScanStrategyInfo {
 }
 
 export const STRATEGIES: ScanStrategyInfo[] = [
-  { key: 'bullish_align', label: '多頭排列', description: 'MA5 > MA10 > MA20 > MA60', color: '#EF4444' },
+  { key: 'bullish_align', label: '剛完成多頭排列', description: '今日剛形成 MA5>MA10>MA20>MA60', color: '#EF4444' },
   { key: 'bearish_align', label: '空頭排列', description: 'MA5 < MA10 < MA20 < MA60', color: '#10B981' },
   { key: 'golden_cross', label: '黃金交叉', description: 'MA5 近3日上穿 MA20', color: '#F59E0B' },
   { key: 'death_cross', label: '死亡交叉', description: 'MA5 近3日下穿 MA20', color: '#8B5CF6' },
@@ -71,8 +71,20 @@ export function runScan(candles: StockCandle[], strategy: ScanStrategy): boolean
   const close = candles[last].close;
 
   switch (strategy) {
-    case 'bullish_align':
-      return ma5 > ma10 && ma10 > ma20 && ma20 > ma60;
+    case 'bullish_align': {
+      // 今天是多頭排列
+      const todayBull = ma5 > ma10 && ma10 > ma20 && ma20 > ma60;
+      if (!todayBull) return false;
+      // 昨天不是多頭排列（剛形成）
+      if (last < 1) return false;
+      const pMa5 = indicators.MA5[last - 1];
+      const pMa10 = indicators.MA10[last - 1];
+      const pMa20 = indicators.MA20[last - 1];
+      const pMa60 = indicators.MA60[last - 1];
+      if (pMa5 === null || pMa10 === null || pMa20 === null || pMa60 === null) return todayBull;
+      const yestBull = pMa5 > pMa10 && pMa10 > pMa20 && pMa20 > pMa60;
+      return !yestBull;
+    }
 
     case 'bearish_align':
       return ma5 < ma10 && ma10 < ma20 && ma20 < ma60;
