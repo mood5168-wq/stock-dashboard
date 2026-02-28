@@ -9,23 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.6.2",
-    "jsonwebtoken": "^9.0.3",
     "lightweight-charts": "^4.2.3",
     "next": "14.2.35",
-    "nodemailer": "^8.0.1",
     "react": "^18",
     "react-dom": "^18",
     "swr": "^2.4.0",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
-    "@types/nodemailer": "^7.0.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",

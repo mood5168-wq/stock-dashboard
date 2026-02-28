@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '打卡管理系統',
-  description: '員工打卡、請假、排班、薪資管理系統',
+  title: '台股技術分析 | TradingView Style',
+  description: 'K線 + 技術指標 + 大戶籌碼 + 複合訊號',
 };
 
 export default function RootLayout({

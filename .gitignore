@@ -17,8 +17,3 @@ npm-debug.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
-
-# SQLite database
-*.db
-*.db-journal
-*.db-wal
