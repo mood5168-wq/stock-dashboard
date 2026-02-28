@@ -37,10 +37,23 @@ export async function GET() {
       throw new Error(json.msg || 'No data');
     }
 
-    // Filter to regular stocks only: 4-digit numeric IDs, twse/tpex
+    // Filter to regular stocks only:
+    // - 4-digit numeric IDs starting with 1-9 (excludes ETFs starting with 0)
+    // - twse/tpex type
+    // - exclude non-stock categories (ETF, TDR, preferred stocks, etc.)
+    const EXCLUDED_CATEGORIES = new Set([
+      'ETF',
+      '存託憑證',        // TDR
+      '特別股',          // Preferred stocks
+      '受益證券',        // Beneficial certificates
+      '臺灣存託憑證',    // Taiwan Depositary Receipts
+    ]);
+
     const regular = json.data
       .filter((r: StockInfo) =>
-        /^\d{4}$/.test(r.stock_id) && ['twse', 'tpex'].includes(r.type)
+        /^[1-9]\d{3}$/.test(r.stock_id) &&
+        ['twse', 'tpex'].includes(r.type) &&
+        !EXCLUDED_CATEGORIES.has(r.industry_category)
       )
       .map((r: StockInfo) => ({
         stock_id: r.stock_id,
