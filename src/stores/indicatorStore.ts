@@ -26,6 +26,9 @@ export const useIndicatorStore = create<IndicatorState>()(
         VWAP: false,
         RS: false,
         VolumeProfile: false,
+        PCRatio: false,
+        OIDistribution: false,
+        OptionSentiment: false,
       },
       toggle: (indicator) =>
         set((state) => {
@@ -52,7 +55,7 @@ export const useIndicatorStore = create<IndicatorState>()(
     }),
     {
       name: 'indicator-storage',
-      version: 3,
+      version: 4,
       merge: (persisted, current) => {
         const p = persisted as Partial<IndicatorState> | undefined;
         if (!p?.visible) return current;

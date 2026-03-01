@@ -1,4 +1,4 @@
-import { StockCandle, ChipEntry } from './types';
+import { StockCandle, ChipEntry, OptionDailyEntry, OptionInstitutionalEntry, FuturesInstitutionalEntry } from './types';
 
 const FINMIND_BASE = 'https://api.finmindtrade.com/api/v4/data';
 
@@ -72,5 +72,112 @@ export async function fetchChipData(
     date: d.date as string,
     HoldingSharesLevel: d.HoldingSharesLevel as string,
     percent: d.percent as number,
+  }));
+}
+
+export async function fetchOptionDaily(
+  days: number,
+  token: string
+): Promise<OptionDailyEntry[]> {
+  const endDate = new Date().toISOString().slice(0, 10);
+  const startDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+
+  const params = new URLSearchParams({
+    dataset: 'TaiwanOptionDaily',
+    data_id: 'TXO',
+    start_date: startDate,
+    end_date: endDate,
+    token,
+  });
+
+  const res = await fetch(`${FINMIND_BASE}?${params}`, { cache: 'no-store' });
+  const json = await res.json();
+
+  if (json.status !== 200) {
+    throw new Error(json.msg || 'API error');
+  }
+
+  if (!json.data?.length) return [];
+
+  return json.data.map((d: Record<string, unknown>) => ({
+    date: d.date as string,
+    option_id: d.option_id as string,
+    contract_date: d.contract_date as string,
+    strike_price: d.strike_price as number,
+    call_put: d.call_put as string,
+    open: d.open as number,
+    max: d.max as number,
+    min: d.min as number,
+    close: d.close as number,
+    volume: d.volume as number,
+    open_interest: d.open_interest as number,
+    trading_session: d.trading_session as string,
+  }));
+}
+
+export async function fetchOptionInstitutional(
+  days: number,
+  token: string
+): Promise<OptionInstitutionalEntry[]> {
+  const endDate = new Date().toISOString().slice(0, 10);
+  const startDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+
+  const params = new URLSearchParams({
+    dataset: 'TaiwanOptionInstitutionalInvestors',
+    data_id: 'TXO',
+    start_date: startDate,
+    end_date: endDate,
+    token,
+  });
+
+  const res = await fetch(`${FINMIND_BASE}?${params}`, { cache: 'no-store' });
+  const json = await res.json();
+
+  if (json.status !== 200) {
+    throw new Error(json.msg || 'API error');
+  }
+
+  if (!json.data?.length) return [];
+
+  return json.data.map((d: Record<string, unknown>) => ({
+    date: d.date as string,
+    name: d.institutional_investors as string,
+    call_put: d.call_put as string,
+    long_deal_volume: d.long_deal_volume as number,
+    short_deal_volume: d.short_deal_volume as number,
+    long_open_interest_balance_volume: d.long_open_interest_balance_volume as number,
+    short_open_interest_balance_volume: d.short_open_interest_balance_volume as number,
+  }));
+}
+
+export async function fetchFuturesInstitutional(
+  days: number,
+  token: string
+): Promise<FuturesInstitutionalEntry[]> {
+  const endDate = new Date().toISOString().slice(0, 10);
+  const startDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+
+  const params = new URLSearchParams({
+    dataset: 'TaiwanFuturesInstitutionalInvestors',
+    data_id: 'TX',
+    start_date: startDate,
+    end_date: endDate,
+    token,
+  });
+
+  const res = await fetch(`${FINMIND_BASE}?${params}`, { cache: 'no-store' });
+  const json = await res.json();
+
+  if (json.status !== 200) {
+    throw new Error(json.msg || 'API error');
+  }
+
+  if (!json.data?.length) return [];
+
+  return json.data.map((d: Record<string, unknown>) => ({
+    date: d.date as string,
+    name: d.institutional_investors as string,
+    long_open_interest_balance_volume: d.long_open_interest_balance_volume as number,
+    short_open_interest_balance_volume: d.short_open_interest_balance_volume as number,
   }));
 }

@@ -7,12 +7,16 @@ import VolumePane from './VolumePane';
 import IndicatorPane from './IndicatorPane';
 import ChipPane from './ChipPane';
 import RSPane from './RSPane';
+import PCRatioPane from './PCRatioPane';
+import OIDistributionPane from './OIDistributionPane';
+import OptionSentimentPane from './OptionSentimentPane';
 import VolumeProfileOverlay from './VolumeProfileOverlay';
 import { useChartStore } from '@/stores/chartStore';
 import { useIndicatorStore } from '@/stores/indicatorStore';
 import { useAlertStore } from '@/stores/alertStore';
 import { useStockData } from '@/hooks/useStockData';
 import { useChipData } from '@/hooks/useChipData';
+import { useOptionsData } from '@/hooks/useOptionsData';
 import { useBenchmarkData } from '@/hooks/useBenchmarkData';
 import { useIndicators } from '@/hooks/useIndicators';
 import { useAlertChecker } from '@/hooks/useAlertChecker';
@@ -29,6 +33,7 @@ export default function ChartContainer() {
 
   const { candles, isLoading, error } = useStockData(symbol, timeframe);
   const { chipSummary } = useChipData(symbol);
+  const { pcRatio, oiDistribution, institutional } = useOptionsData();
   const { benchmark } = useBenchmarkData(timeframe);
   const indicators = useIndicators(candles);
 
@@ -84,8 +89,11 @@ export default function ChartContainer() {
   // Calculate signal
   const signalResult = useMemo(() => {
     if (!candles.length || !indicators) return null;
-    return getSignal(candles, indicators, chipSummary);
-  }, [candles, indicators, chipSummary]);
+    const optionsData = pcRatio.length > 0 || institutional.length > 0
+      ? { pcRatio, institutional }
+      : undefined;
+    return getSignal(candles, indicators, chipSummary, optionsData);
+  }, [candles, indicators, chipSummary, pcRatio, institutional]);
 
   // Count visible sub-panes
   const showVolume = visible.Volume;
@@ -94,6 +102,9 @@ export default function ChartContainer() {
   const showMACD = visible.MACD;
   const showChip = visible.Chip && !!chipSummary?.length;
   const showRS = visible.RS && benchmark.length > 0;
+  const showPCRatio = visible.PCRatio && pcRatio.length > 0;
+  const showOIDistribution = visible.OIDistribution && oiDistribution.data.length > 0;
+  const showOptionSentiment = visible.OptionSentiment && institutional.length > 0;
 
   // RSI lines config
   const rsiLines = useMemo(() => {
@@ -257,9 +268,28 @@ export default function ChartContainer() {
 
       {/* Chip pane */}
       {showChip && (
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 border-b border-[#363A45]">
           <ChipPane candles={candles} chipSummary={chipSummary} registerChart={registerChart} unregisterChart={unregisterChart} syncVisibleRange={syncVisibleRange} />
         </div>
+      )}
+
+      {/* P/C Ratio pane */}
+      {showPCRatio && (
+        <div className="flex-1 min-h-0 border-b border-[#363A45]">
+          <PCRatioPane candles={candles} pcRatio={pcRatio} registerChart={registerChart} unregisterChart={unregisterChart} syncVisibleRange={syncVisibleRange} />
+        </div>
+      )}
+
+      {/* OI Distribution pane */}
+      {showOIDistribution && (
+        <div className="h-[200px] min-h-[200px] border-b border-[#363A45]">
+          <OIDistributionPane data={oiDistribution.data} maxCallStrike={oiDistribution.maxCallStrike} maxPutStrike={oiDistribution.maxPutStrike} />
+        </div>
+      )}
+
+      {/* Option Sentiment pane */}
+      {showOptionSentiment && (
+        <OptionSentimentPane institutional={institutional} />
       )}
     </div>
   );

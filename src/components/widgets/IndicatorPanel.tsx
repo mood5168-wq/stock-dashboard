@@ -27,6 +27,9 @@ const indicatorList: IndicatorItem[] = [
   { id: 'VWAP', label: 'VWAP' },
   { id: 'RS', label: '相對強弱 vs 0050' },
   { id: 'VolumeProfile', label: '成交量堆積' },
+  { id: 'PCRatio', label: 'P/C Ratio' },
+  { id: 'OIDistribution', label: '未平倉分佈' },
+  { id: 'OptionSentiment', label: '法人選擇權' },
 ];
 
 export default function IndicatorPanel() {
@@ -43,7 +46,7 @@ export default function IndicatorPanel() {
   }, []);
 
   // Count top-level active indicators (don't count sub-MAs)
-  const topLevel: IndicatorType[] = ['MA', 'Volume', 'RSI', 'KD', 'MACD', 'Bollinger', 'Chip', 'VWAP', 'RS', 'VolumeProfile'];
+  const topLevel: IndicatorType[] = ['MA', 'Volume', 'RSI', 'KD', 'MACD', 'Bollinger', 'Chip', 'VWAP', 'RS', 'VolumeProfile', 'PCRatio', 'OIDistribution', 'OptionSentiment'];
   const activeCount = topLevel.filter((k) => visible[k]).length;
 
   return (

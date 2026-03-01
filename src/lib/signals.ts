@@ -1,13 +1,15 @@
-import { StockCandle, IndicatorData, ChipSummary, SignalResult, SignalDetail } from './types';
+import { StockCandle, IndicatorData, ChipSummary, PCRatioPoint, InstitutionSentiment, SignalResult, SignalDetail } from './types';
+import { calcOptionSignalScore } from './options';
 
 /**
  * Composite signal scoring — ported from Python app.py:221-300
- * 5 factors: MA, RSI, KD, MACD, Chip
+ * 6 factors: MA, RSI, KD, MACD, Chip, Options
  */
 export function getSignal(
   candles: StockCandle[],
   indicators: IndicatorData,
-  chipSummary: ChipSummary[] | null
+  chipSummary: ChipSummary[] | null,
+  optionsData?: { pcRatio: PCRatioPoint[]; institutional: InstitutionSentiment[] }
 ): SignalResult {
   if (candles.length < 60) {
     return { signal: '數據不足', total: 0, details: [] };
@@ -90,6 +92,12 @@ export function getSignal(
         details.push({ name: '籌碼', score: 0, description: '持平' });
       }
     }
+  }
+
+  // Options score (factor 6)
+  if (optionsData && (optionsData.pcRatio.length > 0 || optionsData.institutional.length > 0)) {
+    const { score, description } = calcOptionSignalScore(optionsData.pcRatio, optionsData.institutional);
+    details.push({ name: '選擇權', score, description });
   }
 
   const total = details.reduce((s, d) => s + d.score, 0);

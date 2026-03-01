@@ -70,6 +70,9 @@ export const COLORS = {
   vwap: '#2962FF',
   rs: '#F59E0B',
   alertLine: '#F59E0B',
+  pcRatio: '#3B82F6',
+  callOI: '#EF4444',
+  putOI: '#10B981',
 };
 
 export const DEFAULT_STOCK = '2330';

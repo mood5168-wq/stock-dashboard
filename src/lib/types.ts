@@ -52,7 +52,62 @@ export interface SignalResult {
 
 export type Timeframe = 'daily' | 'weekly' | 'monthly';
 
-export type IndicatorType = 'MA' | 'MA5' | 'MA10' | 'MA20' | 'MA60' | 'Volume' | 'RSI' | 'KD' | 'MACD' | 'Bollinger' | 'Chip' | 'VWAP' | 'RS' | 'VolumeProfile';
+export type IndicatorType = 'MA' | 'MA5' | 'MA10' | 'MA20' | 'MA60' | 'Volume' | 'RSI' | 'KD' | 'MACD' | 'Bollinger' | 'Chip' | 'VWAP' | 'RS' | 'VolumeProfile' | 'PCRatio' | 'OIDistribution' | 'OptionSentiment';
+
+// FinMind 選擇權原始資料
+export interface OptionDailyEntry {
+  date: string;
+  option_id: string;
+  contract_date: string;
+  strike_price: number;
+  call_put: string;
+  open: number;
+  max: number;
+  min: number;
+  close: number;
+  volume: number;
+  open_interest: number;
+  trading_session: string;
+}
+
+export interface OptionInstitutionalEntry {
+  date: string;
+  name: string;
+  call_put: string;
+  long_deal_volume: number;
+  short_deal_volume: number;
+  long_open_interest_balance_volume: number;
+  short_open_interest_balance_volume: number;
+}
+
+export interface FuturesInstitutionalEntry {
+  date: string;
+  name: string;
+  long_open_interest_balance_volume: number;
+  short_open_interest_balance_volume: number;
+}
+
+// 計算結果
+export interface PCRatioPoint {
+  date: string;
+  callOI: number;
+  putOI: number;
+  pcRatio: number;
+}
+
+export interface OIStrikeData {
+  strikePrice: number;
+  callOI: number;
+  putOI: number;
+}
+
+export interface InstitutionSentiment {
+  name: string;
+  callNet: number;
+  putNet: number;
+  futuresNet: number;
+  sentiment: 'bullish' | 'bearish' | 'neutral';
+}
 
 export interface PriceAlert {
   id: string;
