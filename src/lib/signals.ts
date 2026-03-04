@@ -19,11 +19,16 @@ export function getSignal(
   const close = candles[i].close;
   const details: SignalDetail[] = [];
 
+  // Guard: ensure indicator arrays are long enough
+  if (i >= indicators.MA5.length) {
+    return { signal: '數據不足', total: 0, details: [] };
+  }
+
   // MA score
-  const ma5 = indicators.MA5[i];
-  const ma10 = indicators.MA10[i];
-  const ma20 = indicators.MA20[i];
-  const ma60 = indicators.MA60[i];
+  const ma5 = indicators.MA5[i] ?? null;
+  const ma10 = indicators.MA10[i] ?? null;
+  const ma20 = indicators.MA20[i] ?? null;
+  const ma60 = indicators.MA60[i] ?? null;
 
   if (ma5 !== null && ma10 !== null && ma20 !== null && ma60 !== null) {
     if (close > ma5 && ma5 > ma10 && ma10 > ma20 && ma20 > ma60) {
@@ -40,7 +45,7 @@ export function getSignal(
   }
 
   // RSI score
-  const rsi = indicators.RSI[i];
+  const rsi = indicators.RSI[i] ?? null;
   if (rsi !== null) {
     if (rsi > 70) {
       details.push({ name: 'RSI', score: -1, description: `超買(${rsi.toFixed(0)})` });
@@ -54,8 +59,8 @@ export function getSignal(
   }
 
   // KD score
-  const k = indicators.K[i];
-  const d = indicators.D[i];
+  const k = indicators.K[i] ?? null;
+  const d = indicators.D[i] ?? null;
   if (k !== null && d !== null) {
     if (k > 80) {
       details.push({ name: 'KD', score: -0.5, description: '超買' });
@@ -69,8 +74,8 @@ export function getSignal(
   }
 
   // MACD score
-  const dif = indicators.DIF[i];
-  const dem = indicators.DEM[i];
+  const dif = indicators.DIF[i] ?? null;
+  const dem = indicators.DEM[i] ?? null;
   if (dif !== null && dem !== null) {
     if (dif > dem) {
       details.push({ name: 'MACD', score: 1, description: '多頭' });

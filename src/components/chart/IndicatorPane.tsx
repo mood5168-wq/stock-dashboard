@@ -124,8 +124,9 @@ export default function IndicatorPane({
         lastValueVisible: false,
       });
       const data: HistogramData[] = [];
-      for (let i = 0; i < candles.length; i++) {
-        if (histogram.values[i] !== null) {
+      const hLen = Math.min(candles.length, histogram.values.length);
+      for (let i = 0; i < hLen; i++) {
+        if (histogram.values[i] != null && isFinite(histogram.values[i]!)) {
           data.push({
             time: candles[i].date as Time,
             value: histogram.values[i]!,
@@ -146,8 +147,9 @@ export default function IndicatorPane({
         lastValueVisible: false,
       });
       const data: LineData[] = [];
-      for (let i = 0; i < candles.length; i++) {
-        if (line.values[i] !== null) {
+      const lLen = Math.min(candles.length, line.values.length);
+      for (let i = 0; i < lLen; i++) {
+        if (line.values[i] != null && isFinite(line.values[i]!)) {
           data.push({ time: candles[i].date as Time, value: line.values[i]! });
         }
       }

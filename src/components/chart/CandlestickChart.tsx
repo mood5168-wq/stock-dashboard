@@ -54,8 +54,9 @@ export default function CandlestickChart({ candles, indicators, vwapData, alertP
   const buildLineData = useCallback(
     (values: (number | null)[]): LineData[] => {
       const result: LineData[] = [];
-      for (let i = 0; i < candles.length; i++) {
-        if (values[i] !== null) {
+      const len = Math.min(candles.length, values.length);
+      for (let i = 0; i < len; i++) {
+        if (values[i] != null && isFinite(values[i]!)) {
           result.push({ time: candles[i].date as Time, value: values[i]! });
         }
       }

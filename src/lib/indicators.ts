@@ -247,20 +247,24 @@ export function resampleCandles(
   const result: StockCandle[] = [];
   for (const [key, group] of Array.from(groups.entries())) {
     if (!group.length) continue;
+    // Filter out entries with invalid prices
+    const valid = group.filter(g => g.close > 0 && g.high > 0 && g.low > 0);
+    if (!valid.length) continue;
+
     const lastDate = timeframe === 'monthly'
-      ? group[group.length - 1].date
+      ? valid[valid.length - 1].date
       : key;
 
     result.push({
       date: lastDate,
-      open: group[0].open,
-      high: Math.max(...group.map(g => g.high)),
-      low: Math.min(...group.map(g => g.low)),
-      close: group[group.length - 1].close,
-      volume: group.reduce((s, g) => s + g.volume, 0),
-      spread: group.reduce((s, g) => s + g.spread, 0),
-      Trading_money: group.reduce((s, g) => s + g.Trading_money, 0),
-      Trading_turnover: group.reduce((s, g) => s + g.Trading_turnover, 0),
+      open: valid[0].open,
+      high: Math.max(...valid.map(g => g.high)),
+      low: Math.min(...valid.map(g => g.low)),
+      close: valid[valid.length - 1].close,
+      volume: valid.reduce((s, g) => s + (g.volume || 0), 0),
+      spread: valid.reduce((s, g) => s + (g.spread || 0), 0),
+      Trading_money: valid.reduce((s, g) => s + (g.Trading_money || 0), 0),
+      Trading_turnover: valid.reduce((s, g) => s + (g.Trading_turnover || 0), 0),
     });
   }
 

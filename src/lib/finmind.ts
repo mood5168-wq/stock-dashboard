@@ -33,15 +33,16 @@ export async function fetchStockData(
   return json.data
     .map((d: Record<string, unknown>) => ({
       date: d.date as string,
-      open: d.open as number,
-      high: d.max as number,   // FinMind uses 'max'
-      low: d.min as number,    // FinMind uses 'min'
-      close: d.close as number,
-      volume: d.Trading_Volume as number,
-      spread: d.spread as number,
-      Trading_money: d.Trading_money as number,
-      Trading_turnover: d.Trading_turnover as number,
+      open: Number(d.open) || 0,
+      high: Number(d.max) || 0,   // FinMind uses 'max'
+      low: Number(d.min) || 0,    // FinMind uses 'min'
+      close: Number(d.close) || 0,
+      volume: Number(d.Trading_Volume) || 0,
+      spread: Number(d.spread) || 0,
+      Trading_money: Number(d.Trading_money) || 0,
+      Trading_turnover: Number(d.Trading_turnover) || 0,
     }))
+    .filter((c: StockCandle) => c.close > 0 && c.high > 0 && c.low > 0)
     .sort((a: StockCandle, b: StockCandle) => a.date.localeCompare(b.date));
 }
 

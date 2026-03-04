@@ -23,6 +23,7 @@ export default function PriceHeader() {
     ? crosshairIndex
     : candles.length - 1;
   const c = candles[idx];
+  if (!c || !c.close) return null;
   const prev = idx > 0 ? candles[idx - 1] : c;
   const change = c.close - prev.close;
   const changePct = prev.close ? (change / prev.close) * 100 : 0;
