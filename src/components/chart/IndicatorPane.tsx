@@ -70,10 +70,12 @@ export default function IndicatorPane({
       },
       rightPriceScale: {
         borderColor: COLORS.border,
+        minimumWidth: 60,
       },
       timeScale: {
         borderColor: COLORS.border,
         visible: false,
+        rightOffset: 5,
       },
     });
 

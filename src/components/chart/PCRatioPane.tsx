@@ -66,10 +66,12 @@ export default function PCRatioPane({ candles, pcRatio, registerChart, unregiste
       },
       rightPriceScale: {
         borderColor: COLORS.border,
+        minimumWidth: 60,
       },
       timeScale: {
         borderColor: COLORS.border,
         visible: false,
+        rightOffset: 5,
       },
     });
 

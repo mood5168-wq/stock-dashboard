@@ -110,6 +110,7 @@ export default function CandlestickChart({ candles, indicators, vwapData, alertP
       handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
       rightPriceScale: {
         borderColor: COLORS.border,
+        minimumWidth: 60,
       },
       timeScale: {
         borderColor: COLORS.border,

@@ -65,10 +65,12 @@ export default function ChipPane({ candles, chipSummary, registerChart, unregist
       },
       rightPriceScale: {
         borderColor: COLORS.border,
+        minimumWidth: 60,
       },
       timeScale: {
         borderColor: COLORS.border,
         visible: false,
+        rightOffset: 5,
       },
     });
 

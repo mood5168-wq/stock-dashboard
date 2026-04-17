@@ -58,10 +58,12 @@ export default function RSPane({ candles, benchmark, registerChart, unregisterCh
       },
       rightPriceScale: {
         borderColor: COLORS.border,
+        minimumWidth: 60,
       },
       timeScale: {
         borderColor: COLORS.border,
         visible: false,
+        rightOffset: 5,
       },
     });
 
