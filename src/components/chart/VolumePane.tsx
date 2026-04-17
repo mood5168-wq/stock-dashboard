@@ -43,7 +43,7 @@ export default function VolumePane({ candles, registerChart, unregisterChart, sy
       },
       rightPriceScale: {
         borderColor: COLORS.border,
-        minimumWidth: 60,
+        minimumWidth: 80,
       },
       timeScale: {
         borderColor: COLORS.border,
