@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useChartStore } from '@/stores/chartStore';
 import { useScannerData } from '@/hooks/useScannerData';
 import { STRATEGIES, SCAN_SCOPES, ScanStrategy, ScanScope } from '@/lib/scanner';
@@ -8,12 +8,24 @@ import { STRATEGIES, SCAN_SCOPES, ScanStrategy, ScanScope } from '@/lib/scanner'
 interface Props {
   open: boolean;
   onClose: () => void;
+  initialStrategy?: ScanStrategy | null;
 }
 
-export default function ScannerPanel({ open, onClose }: Props) {
+export default function ScannerPanel({ open, onClose, initialStrategy }: Props) {
   const [strategy, setStrategy] = useState<ScanStrategy>('bullish_align');
   const [scope, setScope] = useState<ScanScope>('thousand');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // 當外部傳入 initialStrategy（例如點擊「🏆 老王」按鈕）時自動套用
+  useEffect(() => {
+    if (open && initialStrategy) {
+      setStrategy(initialStrategy);
+      // 老王策略預設掃全市場，千元股太少
+      if (initialStrategy === 'four_dragons' || initialStrategy === 'tri_sun_strong' || initialStrategy === 'tri_sun') {
+        setScope('twse');
+      }
+    }
+  }, [open, initialStrategy]);
   const { symbol, setSymbol } = useChartStore();
   const { results, scanning, progress, total, scanned, rescan, stop } = useScannerData(strategy, scope, open);
 

@@ -10,9 +10,10 @@ import { useChartStore } from '@/stores/chartStore';
 interface Props {
   onToggleScanner: () => void;
   scannerOpen: boolean;
+  onOpenOldwang: () => void;
 }
 
-export default function TopToolbar({ onToggleScanner, scannerOpen }: Props) {
+export default function TopToolbar({ onToggleScanner, scannerOpen, onOpenOldwang }: Props) {
   const { symbol, setSymbol } = useChartStore();
 
   return (
@@ -48,6 +49,15 @@ export default function TopToolbar({ onToggleScanner, scannerOpen }: Props) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
         掃描
+      </button>
+      <div className="w-px h-6 bg-[#363A45]" />
+      <button
+        onClick={onOpenOldwang}
+        title="老王選股：四海遊龍 / 三陽開泰"
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors text-[#FFD700] hover:bg-[#2A2E39]"
+      >
+        <span>🏆</span>
+        <span>老王</span>
       </button>
       <div className="flex-1" />
       <PriceHeader />

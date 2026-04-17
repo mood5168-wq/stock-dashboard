@@ -8,7 +8,10 @@ export type ScanStrategy =
   | 'death_cross'      // 死亡交叉: MA5 下穿 MA20 (近3日)
   | 'ma_converge'      // 均線糾結: 四條 MA 價差 < 2%
   | 'above_all_ma'     // 站上所有均線: close > MA5/10/20/60
-  | 'above_3ma';       // 站上三線: close > MA10/20/60 但 < MA5
+  | 'above_3ma'        // 站上三線: close > MA10/20/60 但 < MA5
+  | 'four_dragons'     // 老王·四海遊龍: 多頭排列 + 站上所有均線
+  | 'tri_sun_strong'   // 老王·三陽開泰(強): close > MA10 > MA20 > MA60 + MA20 上揚
+  | 'tri_sun';         // 老王·三陽開泰(一般): close > MA10 > MA20 > MA60
 
 export interface ScanStrategyInfo {
   key: ScanStrategy;
@@ -18,6 +21,9 @@ export interface ScanStrategyInfo {
 }
 
 export const STRATEGIES: ScanStrategyInfo[] = [
+  { key: 'four_dragons', label: '🏆 老王·四海遊龍', description: '多頭排列 + 站上所有均線', color: '#FFD700' },
+  { key: 'tri_sun_strong', label: '☀️ 老王·三陽開泰(強)', description: 'close>MA10>MA20>MA60 + MA20上揚', color: '#FF9500' },
+  { key: 'tri_sun', label: '🌤️ 老王·三陽開泰', description: 'close>MA10>MA20>MA60', color: '#FFA500' },
   { key: 'bullish_align', label: '剛完成多頭排列', description: '今日剛形成 MA5>MA10>MA20>MA60', color: '#EF4444' },
   { key: 'bearish_align', label: '空頭排列', description: 'MA5 < MA10 < MA20 < MA60', color: '#10B981' },
   { key: 'golden_cross', label: '黃金交叉', description: 'MA5 近3日上穿 MA20', color: '#F59E0B' },
@@ -109,6 +115,26 @@ export function runScan(candles: StockCandle[], strategy: ScanStrategy): boolean
     case 'above_3ma':
       // 股價站上 MA10/20/60 但尚未站上 MA5（剛突破中長期均線，短均還沒跟上）
       return close > ma10 && close > ma20 && close > ma60 && close <= ma5;
+
+    case 'four_dragons': {
+      // 老王·四海遊龍: 多頭排列 + 收盤價站上所有均線
+      const bullAlign = ma5 > ma10 && ma10 > ma20 && ma20 > ma60;
+      const aboveAll = close > ma5 && close > ma10 && close > ma20 && close > ma60;
+      return bullAlign && aboveAll;
+    }
+
+    case 'tri_sun_strong': {
+      // 老王·三陽開泰(強): close>MA10>MA20>MA60 且 MA20 上揚（vs 5 日前）
+      const priceOrder = close > ma10 && ma10 > ma20 && ma20 > ma60;
+      if (!priceOrder) return false;
+      if (last < 5) return false;
+      const ma20Past = indicators.MA20[last - 5];
+      return ma20Past !== null && ma20 > ma20Past;
+    }
+
+    case 'tri_sun':
+      // 老王·三陽開泰(一般): close>MA10>MA20>MA60
+      return close > ma10 && ma10 > ma20 && ma20 > ma60;
 
     default:
       return false;
