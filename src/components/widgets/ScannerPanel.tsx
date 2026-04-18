@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useChartStore } from '@/stores/chartStore';
 import { useScannerData } from '@/hooks/useScannerData';
 import { STRATEGIES, SCAN_SCOPES, ScanStrategy, ScanScope } from '@/lib/scanner';
+import { useWatchlistStore, WATCHLIST_MAX } from '@/stores/watchlistStore';
 
 interface Props {
   open: boolean;
@@ -198,32 +199,70 @@ function StockRow({
   dimmed?: boolean;
   onClick: () => void;
 }) {
+  const isTracking = useWatchlistStore((s) => s.isTracking(r.code));
+  const itemsCount = useWatchlistStore((s) => s.items.length);
+  const addItem = useWatchlistStore((s) => s.addItem);
+  const removeItem = useWatchlistStore((s) => s.removeItem);
+
+  const toggleTrack = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isTracking) {
+      removeItem(r.code);
+    } else {
+      addItem({ code: r.code, name: r.name });
+    }
+  };
+
+  const canAdd = isTracking || itemsCount < WATCHLIST_MAX;
+
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-3 py-2 border-b border-[#1a1e2b] hover:bg-[#2A2E39] transition-colors ${
+    <div
+      className={`group flex items-center border-b border-[#1a1e2b] hover:bg-[#2A2E39] transition-colors ${
         active ? 'bg-[#2A2E39]' : ''
       } ${dimmed ? 'opacity-40' : ''}`}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {r.matched && color && (
-            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-          )}
-          <span className={`text-sm font-medium ${active ? 'text-[#2962FF]' : 'text-[#D1D4DC]'}`}>
-            {r.code}
-          </span>
-          <span className="text-[11px] text-[#787B86]">{r.name}</span>
+      <button onClick={onClick} className="min-w-0 flex-1 px-3 py-2 text-left">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {r.matched && color && (
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+            )}
+            <span className={`text-sm font-medium ${active ? 'text-[#2962FF]' : 'text-[#D1D4DC]'}`}>
+              {r.code}
+            </span>
+            <span className="text-[11px] text-[#787B86]">{r.name}</span>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center justify-between mt-0.5">
-        <span className="text-xs text-[#D1D4DC]">{r.close.toLocaleString()}</span>
-        <span className={`text-xs font-medium ${
-          r.changePct > 0 ? 'text-[#EF4444]' : r.changePct < 0 ? 'text-[#10B981]' : 'text-[#787B86]'
-        }`}>
-          {r.changePct > 0 ? '+' : ''}{r.changePct.toFixed(2)}%
-        </span>
-      </div>
-    </button>
+        <div className="flex items-center justify-between mt-0.5">
+          <span className="text-xs text-[#D1D4DC]">{r.close.toLocaleString()}</span>
+          <span className={`text-xs font-medium ${
+            r.changePct > 0 ? 'text-[#EF4444]' : r.changePct < 0 ? 'text-[#10B981]' : 'text-[#787B86]'
+          }`}>
+            {r.changePct > 0 ? '+' : ''}{r.changePct.toFixed(2)}%
+          </span>
+        </div>
+      </button>
+      <button
+        onClick={toggleTrack}
+        disabled={!canAdd}
+        title={
+          isTracking
+            ? '從追蹤移除'
+            : canAdd
+            ? '加入追蹤'
+            : `已達 ${WATCHLIST_MAX} 檔上限`
+        }
+        aria-label={isTracking ? '從追蹤移除' : '加入追蹤'}
+        className={`mr-1 h-7 w-7 shrink-0 rounded text-base transition ${
+          isTracking
+            ? 'text-[#FFD700] hover:bg-[#363A45]'
+            : canAdd
+            ? 'text-[#787B86] opacity-0 hover:bg-[#363A45] hover:text-[#FFD700] group-hover:opacity-100 focus:opacity-100'
+            : 'text-[#363A45] cursor-not-allowed'
+        }`}
+      >
+        {isTracking ? '★' : '☆'}
+      </button>
+    </div>
   );
 }
