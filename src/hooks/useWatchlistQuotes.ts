@@ -16,8 +16,9 @@ const QUOTE_BATCH_SIZE = 8;
 
 async function fetchOne(code: string): Promise<[string, WatchlistQuote]> {
   try {
-    // days=2 正好滿足 close + changePct 計算，不浪費頻寬
-    const res = await fetch(`/api/stock?id=${code}&days=2`);
+    // days=7 (calendar) 保證 Mon / 長假後仍至少拿到 2 根交易日
+    // 用 2 會在週一或連假後只拿到 1 根 → changePct 變 null
+    const res = await fetch(`/api/stock?id=${code}&days=7`);
     if (!res.ok) throw new Error('Failed to fetch stock quote');
     const data = (await res.json()) as StockCandle[];
     if (!Array.isArray(data) || data.length === 0) {
