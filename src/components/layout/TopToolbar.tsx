@@ -53,11 +53,11 @@ export default function TopToolbar({ onToggleScanner, scannerOpen, onOpenOldwang
       <div className="w-px h-6 bg-[#363A45]" />
       <button
         onClick={onOpenOldwang}
-        title="老王選股：四海遊龍 / 三陽開泰"
+        title="獵豹選股：早鳥 / 觀察（早期捕捉短線轉強）"
         className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors text-[#FFD700] hover:bg-[#2A2E39]"
       >
-        <span>🏆</span>
-        <span>老王</span>
+        <span>🐆</span>
+        <span>獵豹</span>
       </button>
       <div className="flex-1" />
       <PriceHeader />

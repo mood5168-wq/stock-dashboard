@@ -12,7 +12,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [initialStrategy, setInitialStrategy] = useState<ScanStrategy | null>(null);
 
   const openOldwang = () => {
-    setInitialStrategy('four_dragons');
+    setInitialStrategy('cheetah_early');
     setScannerOpen(true);
   };
 

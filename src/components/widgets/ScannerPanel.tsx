@@ -16,12 +16,12 @@ export default function ScannerPanel({ open, onClose, initialStrategy }: Props) 
   const [scope, setScope] = useState<ScanScope>('thousand');
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // 當外部傳入 initialStrategy（例如點擊「🏆 老王」按鈕）時自動套用
+  // 當外部傳入 initialStrategy（例如點擊「🐆 獵豹」按鈕）時自動套用
   useEffect(() => {
     if (open && initialStrategy) {
       setStrategy(initialStrategy);
-      // 老王策略預設掃全市場，千元股太少
-      if (initialStrategy === 'four_dragons' || initialStrategy === 'tri_sun_strong' || initialStrategy === 'tri_sun') {
+      // 獵豹策略預設掃全市場，千元股太少
+      if (initialStrategy === 'cheetah_early' || initialStrategy === 'cheetah_watch_strong' || initialStrategy === 'cheetah_watch') {
         setScope('twse');
       }
     }
