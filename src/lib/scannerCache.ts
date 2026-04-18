@@ -8,6 +8,9 @@ const DB_NAME = 'stock-dashboard-cache';
 const DB_VERSION = 1;
 const STORE = 'scannerResults';
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 分鐘
+// 每次修 scanner 邏輯（去重、閾值、MA 公式等）都要 bump 這個版本
+// 讓舊的 cache 失效，避免用戶看到陳年結果
+const CACHE_VERSION = 'v2';
 
 interface CacheEntry {
   key: string;
@@ -34,7 +37,7 @@ function openDB(): Promise<IDBDatabase | null> {
 }
 
 function buildKey(scope: ScanScope, strategy: ScanStrategy): string {
-  return `${scope}:${strategy}`;
+  return `${CACHE_VERSION}:${scope}:${strategy}`;
 }
 
 export async function loadCachedResults(
