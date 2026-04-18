@@ -99,7 +99,14 @@ export function useScannerData(strategy: ScanStrategy, scope: ScanScope, active:
     }
 
     abortRef.current = false;
-    setState((prev) => ({ ...prev, scanning: true, progress: 0, total: stocks.length, scanned: 0 }));
+    // force 重掃時清空舊結果，避免顯示上一次策略/範圍的殘留
+    setState((prev) => ({
+      results: force ? [] : prev.results,
+      scanning: true,
+      progress: 0,
+      total: stocks.length,
+      scanned: 0,
+    }));
 
     const results: ScanResult[] = [];
     const total = stocks.length;
@@ -113,7 +120,9 @@ export function useScannerData(strategy: ScanStrategy, scope: ScanScope, active:
         try {
           let candles = cacheRef.current.get(code);
           if (!candles) {
-            const res = await fetch(`/api/stock?id=${code}&days=90`);
+            // 120 calendar days ≈ 85 trading days，給 MA60 (需 61) 留足緩衝
+            // 不可降到 90，連假密集期（春節/國慶）會讓交易日數 < 61 導致 MA60 策略失效
+            const res = await fetch(`/api/stock?id=${code}&days=120`);
             if (!res.ok) return null;
             const json = await res.json();
             if (json.error) return null;
