@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useStockLookup } from '@/hooks/useStockLookup';
 import { useWatchlistQuotes } from '@/hooks/useWatchlistQuotes';
 import { THOUSAND_CLUB } from '@/lib/constants';
+import { calcChipSummary } from '@/lib/chip';
+import { ChipEntry } from '@/lib/types';
 import { useChartStore } from '@/stores/chartStore';
 import { useWatchlistStore, WATCHLIST_MAX } from '@/stores/watchlistStore';
 
@@ -198,36 +200,23 @@ function ThousandClubSection() {
       try {
         const res = await fetch(`/api/chip?id=${code}&days=30`);
         if (!res.ok) continue;
-        const data = await res.json();
+        const data = (await res.json()) as ChipEntry[];
         if (!data?.length) continue;
 
-        const LARGE_LEVELS = [
-          '1,000-5,000', '5,001-10,000', '10,001-15,000', '15,001-20,000',
-          '20,001-30,000', '30,001-40,000', '40,001-50,000', '50,001-100,000',
-          '100,001-200,000', '200,001-400,000', '400,001-600,000', '600,001-800,000',
-          '800,001-1,000,000', 'more than 1,000,001',
-        ];
+        // 使用共用 calcChipSummary，避免邏輯重覆
+        const summary = calcChipSummary(data);
+        if (summary.length < 2) continue;
 
-        const dateMap = new Map<string, number>();
-        for (const e of data) {
-          if (LARGE_LEVELS.includes(e.HoldingSharesLevel)) {
-            dateMap.set(e.date, (dateMap.get(e.date) || 0) + e.percent);
-          }
-        }
+        const latest = summary[summary.length - 1].large_pct;
+        const chg = summary[summary.length - 1].pct_chg ?? 0;
 
-        const sorted = Array.from(dateMap.entries()).sort(([a], [b]) => a.localeCompare(b));
-        if (sorted.length >= 2) {
-          const latest = sorted[sorted.length - 1][1];
-          const prev = sorted[sorted.length - 2][1];
-          const chg = latest - prev;
-          scanned.push({
-            code,
-            name,
-            large_pct: latest.toFixed(2),
-            pct_chg: `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}`,
-            signal: chg > 0.3 ? '🟢 吸籌' : chg < -0.3 ? '🔴 出貨' : '⚪ 持平',
-          });
-        }
+        scanned.push({
+          code,
+          name,
+          large_pct: latest.toFixed(2),
+          pct_chg: `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}`,
+          signal: chg > 0.3 ? '🟢 吸籌' : chg < -0.3 ? '🔴 出貨' : '⚪ 持平',
+        });
       } catch {
         // skip
       }

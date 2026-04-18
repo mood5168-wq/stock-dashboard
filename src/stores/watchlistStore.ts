@@ -43,6 +43,20 @@ export const useWatchlistStore = create<WatchlistState>()(
       version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ items: state.items }),
+      // 未來若 schema 變動（例：加 addedAt），在此轉換舊資料而非讓它靜默壞掉
+      migrate: (persisted: unknown, version): { items: WatchlistItem[] } => {
+        if (!persisted || typeof persisted !== 'object') return { items: [] };
+        const state = persisted as { items?: unknown };
+        if (!Array.isArray(state.items)) return { items: [] };
+        const items = state.items
+          .filter((it): it is WatchlistItem =>
+            !!it && typeof it === 'object' &&
+            typeof (it as WatchlistItem).code === 'string' &&
+            typeof (it as WatchlistItem).name === 'string'
+          )
+          .slice(0, WATCHLIST_MAX);
+        return { items };
+      },
     }
   )
 );
