@@ -68,7 +68,15 @@ export function useScannerData(strategy: ScanStrategy, scope: ScanScope, active:
       filtered = fullList.filter((s) => s.type === 'tpex');
     }
 
-    return filtered.map((s) => ({ code: s.stock_id, name: s.stock_name }));
+    // 防禦性去重：/api/stocklist 的快取如果還是舊版本會含重複
+    const seen = new Set<string>();
+    const unique: { code: string; name: string }[] = [];
+    for (const s of filtered) {
+      if (seen.has(s.stock_id)) continue;
+      seen.add(s.stock_id);
+      unique.push({ code: s.stock_id, name: s.stock_name });
+    }
+    return unique;
   }, [scope, fullList]);
 
   const scan = useCallback(async (force = false) => {

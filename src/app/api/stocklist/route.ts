@@ -38,16 +38,22 @@ export async function GET() {
     }
 
     // Filter to regular stocks only: 4-digit numeric IDs, twse/tpex
-    const regular = json.data
-      .filter((r: StockInfo) =>
-        /^\d{4}$/.test(r.stock_id) && ['twse', 'tpex'].includes(r.type)
-      )
-      .map((r: StockInfo) => ({
-        stock_id: r.stock_id,
-        stock_name: r.stock_name,
-        type: r.type,
-        industry_category: r.industry_category,
-      }));
+    // FinMind TaiwanStockInfo 每檔可能有多列（交叉上市 / 歷史產業分類），
+    // 用 Map 以 stock_id 去重，保留第一筆。
+    const dedupMap = new Map<string, StockInfo>();
+    for (const r of json.data as StockInfo[]) {
+      if (!/^\d{4}$/.test(r.stock_id)) continue;
+      if (!['twse', 'tpex'].includes(r.type)) continue;
+      if (!dedupMap.has(r.stock_id)) {
+        dedupMap.set(r.stock_id, {
+          stock_id: r.stock_id,
+          stock_name: r.stock_name,
+          type: r.type,
+          industry_category: r.industry_category,
+        });
+      }
+    }
+    const regular = Array.from(dedupMap.values());
 
     cachedList = regular;
     cachedAt = Date.now();
