@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     if (type === 'daily') {
       const daily = await fetchOptionDaily(days, token);
       return NextResponse.json({ daily }, {
-        headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' },
+        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=300' },
       });
     }
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         fetchFuturesInstitutional(days, token),
       ]);
       return NextResponse.json({ optionInst, futuresInst }, {
-        headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' },
+        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=300' },
       });
     }
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({ daily, optionInst, futuresInst }, {
-      headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=60' },
+      headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=300' },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error';

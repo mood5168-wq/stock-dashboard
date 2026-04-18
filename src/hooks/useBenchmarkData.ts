@@ -20,7 +20,7 @@ export function useBenchmarkData(timeframe: Timeframe) {
   const { data } = useSWR<StockCandle[]>(
     `/api/stock?id=${BENCHMARK_ID}&days=${fetchDays}&adj=true`,
     fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 600000 }
+    { revalidateOnFocus: false, dedupingInterval: 3600000 }
   );
 
   let candles = data || [];

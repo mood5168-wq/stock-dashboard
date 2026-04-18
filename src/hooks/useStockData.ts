@@ -20,7 +20,7 @@ export function useStockData(symbol: string, timeframe: Timeframe) {
   const { data, error, isLoading } = useSWR<StockCandle[]>(
     symbol ? `/api/stock?id=${symbol}&days=${fetchDays}` : null,
     fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 300000, errorRetryCount: 3 }
+    { revalidateOnFocus: false, dedupingInterval: 3600000, errorRetryCount: 3 }
   );
 
   let candles = data || [];

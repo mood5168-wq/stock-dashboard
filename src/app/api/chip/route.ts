@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const data = await fetchChipData(stockId, days, token);
     return NextResponse.json(data, {
-      headers: { 'Cache-Control': 's-maxage=600, stale-while-revalidate=60' },
+      headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=300' },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error';

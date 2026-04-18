@@ -3,6 +3,7 @@ import useSWR from 'swr';
 import { StockCandle } from '@/lib/types';
 import { THOUSAND_CLUB, MARKET_INDEX } from '@/lib/constants';
 import { ScanStrategy, ScanScope, ScanResult, runScan } from '@/lib/scanner';
+import { loadCachedResults, saveCachedResults } from '@/lib/scannerCache';
 
 interface StockInfo {
   stock_id: string;
@@ -68,12 +69,37 @@ export function useScannerData(strategy: ScanStrategy, scope: ScanScope, active:
     return filtered.map((s) => ({ code: s.stock_id, name: s.stock_name }));
   }, [scope, fullList]);
 
-  const scan = useCallback(async () => {
+  const scan = useCallback(async (force = false) => {
     const stocks = getStockList();
     if (!stocks.length) return;
 
+    // 先嘗試讀 IndexedDB 快取（30 分內視為新鮮）
+    if (!force) {
+      const cached = await loadCachedResults(scope, strategy);
+      if (cached && cached.isFresh) {
+        setState({
+          results: cached.results,
+          scanning: false,
+          progress: 100,
+          total: cached.results.length,
+          scanned: cached.results.length,
+        });
+        return;
+      }
+      // 過期也先顯示舊資料（stale-while-revalidate）
+      if (cached && !cached.isFresh) {
+        setState({
+          results: cached.results,
+          scanning: true,
+          progress: 0,
+          total: stocks.length,
+          scanned: 0,
+        });
+      }
+    }
+
     abortRef.current = false;
-    setState({ results: [], scanning: true, progress: 0, total: stocks.length, scanned: 0 });
+    setState((prev) => ({ ...prev, scanning: true, progress: 0, total: stocks.length, scanned: 0 }));
 
     const results: ScanResult[] = [];
     const total = stocks.length;
@@ -87,7 +113,7 @@ export function useScannerData(strategy: ScanStrategy, scope: ScanScope, active:
         try {
           let candles = cacheRef.current.get(code);
           if (!candles) {
-            const res = await fetch(`/api/stock?id=${code}&days=120`);
+            const res = await fetch(`/api/stock?id=${code}&days=90`);
             if (!res.ok) return null;
             const json = await res.json();
             if (json.error) return null;
@@ -138,6 +164,11 @@ export function useScannerData(strategy: ScanStrategy, scope: ScanScope, active:
     });
 
     setState({ results, scanning: false, progress: 100, total, scanned: total });
+
+    // 掃完存進 IndexedDB
+    if (!abortRef.current) {
+      void saveCachedResults(scope, strategy, results);
+    }
   }, [strategy, scope, getStockList]);
 
   // Auto-scan when strategy/scope changes and panel is active
@@ -154,5 +185,8 @@ export function useScannerData(strategy: ScanStrategy, scope: ScanScope, active:
     abortRef.current = true;
   }, []);
 
-  return { ...state, rescan: scan, stop };
+  // rescan 按鈕 = force 重新掃（略過快取）
+  const rescan = useCallback(() => scan(true), [scan]);
+
+  return { ...state, rescan, stop };
 }

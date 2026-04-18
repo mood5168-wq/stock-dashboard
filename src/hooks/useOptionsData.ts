@@ -31,7 +31,7 @@ export function useOptionsData() {
   const { data, error, isLoading } = useSWR<OptionsAPIResponse>(
     '/api/options?days=60&type=all',
     fetcher,
-    { revalidateOnFocus: false, dedupingInterval: 300000 }
+    { revalidateOnFocus: false, dedupingInterval: 3600000 }
   );
 
   const pcRatio = useMemo((): PCRatioPoint[] => {
